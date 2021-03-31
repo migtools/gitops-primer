@@ -1,0 +1,41 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  creationTimestamp: null
+  name: primer
+spec:
+  jobTemplate:
+    metadata:
+      creationTimestamp: null
+      name: primer
+    spec:
+      template:
+        metadata:
+          creationTimestamp: null
+        spec:
+          containers:
+          - image: quay.io/rcook/tools:primer
+            name: primer
+            imagePullPolicy: Always
+            command: ["/bin/bash", "-c", "/committer.sh"]
+            env:
+              - name: REPO
+                value: git@github.com:cooktheryan/primer-poc.git
+            volumeMounts:
+              - mountPath: /keys
+                name: sshkey
+              - name: repo
+                mountPath: /repo
+          securityContext:
+            runAsUser: 0
+          volumes:
+            - name: sshkey
+              secret:
+                secretName: secure-key
+                defaultMode: 0600
+            - name: repo
+              emptyDir: {}
+          restartPolicy: Never
+          serviceAccount: gitops-primer
+  schedule: '*/1 * * * *'
+status: {}
