@@ -18,8 +18,8 @@ rules:
       - securitycontextconstraints
     verbs:
       - use
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
+  - apiGroups: ["*"]
+    resources: ["*"]
     verbs: ["list", "get"]
 
 ---

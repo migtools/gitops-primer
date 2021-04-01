@@ -14,13 +14,17 @@ spec:
           creationTimestamp: null
         spec:
           containers:
-          - image: quay.io/rcook/tools:primer
+          - image: quay.io/rcook/tools:primer2
             name: primer
             imagePullPolicy: Always
             command: ["/bin/bash", "-c", "/committer.sh"]
             env:
               - name: REPO
                 value: git@github.com:cooktheryan/primer-poc.git
+              - name: OBJECTS
+                value: "deployments route svc pod configmap"
+              - name: BRANCH
+                value: stage
             volumeMounts:
               - mountPath: /keys
                 name: sshkey
@@ -37,5 +41,5 @@ spec:
               emptyDir: {}
           restartPolicy: Never
           serviceAccount: gitops-primer
-  schedule: '*/1 * * * *'
+  schedule: '*/3 * * * *'
 status: {}

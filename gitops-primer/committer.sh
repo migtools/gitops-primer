@@ -25,23 +25,28 @@ Host *
 SSHCONFIG
 
 git clone $REPO /repo
-mkdir /repo/deployments || true
 
-for i in `kubectl get deployment | grep -v NAME | awk '{print $1}'`; do
-    kubectl get -o=json deployment $i | jq --sort-keys 'del(
-          .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration",
-          .metadata.annotations."control-plane.alpha.kubernetes.io/leader",
-          .metadata.uid,
-          .metadata.selfLink,
-          .metadata.resourceVersion,
-          .metadata.creationTimestamp,
-          .metadata.generation,
-          .metadata.managedFields
-      )' | python3 -c 'import sys, yaml, json; yaml.safe_dump(json.load(sys.stdin), sys.stdout, default_flow_style=False)' > /repo/deployments/$i.yaml ;
-      done
+for o in $OBJECTS; do 
+  mkdir /repo/$o || true
+  for i in `kubectl get $o | grep -v NAME | awk '{print $1}'`; do
+      kubectl get -o=json $o $i | jq --sort-keys 'del(
+           .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration",
+           .metadata.annotations."control-plane.alpha.kubernetes.io/leader",
+           .metadata.uid,
+           .metadata.selfLink,
+           .metadata.resourceVersion,
+           .metadata.creationTimestamp,
+           .metadata.generation,
+           .metadata.managedFields,
+           .status
+        )' | python3 -c 'import sys, yaml, json; yaml.safe_dump(json.load(sys.stdin), sys.stdout, default_flow_style=False)' > /repo/$o/$i.yaml ;
+  done
+done
 
       cd /repo
+      rm -rf pod/primer*
       git config --global user.email "rcook@redhat.com"
+      git checkout $BRANCH
       git add *
       git commit -am 'bot commit'
       git push origin $BRANCH
