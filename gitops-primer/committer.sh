@@ -24,10 +24,14 @@ Host *
   TCPKeepAlive no
 SSHCONFIG
 
-git clone $REPO /repo
+[ "$(ls -A /repo)" ] && echo "Repo is already cloned" || git clone $REPO /repo
+cd /repo
+git fetch
+git checkout $BRANCH
+git config --global user.email "rcook@redhat.com"
 
 for o in $OBJECTS; do 
-  mkdir /repo/$o || true
+  [ "$(ls -A /repo/$o)" ] ||  mkdir /repo/$o
   for i in `kubectl get $o | grep -v NAME | awk '{print $1}'`; do
       kubectl get -o=json $o $i | jq --sort-keys 'del(
            .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration",
@@ -43,10 +47,19 @@ for o in $OBJECTS; do
   done
 done
 
-      cd /repo
-      rm -rf pod/primer*
-      git config --global user.email "rcook@redhat.com"
-      git checkout $BRANCH
+
+rm -rf pod/primer*
+
+case "${ACTION}" in
+merge)
       git add *
       git commit -am 'bot commit'
       git push origin $BRANCH
+      ;;
+alert)
+      git status -s
+    ;;
+*)
+    error 1 "unknown action: ${ACTION}"
+    ;;
+esac

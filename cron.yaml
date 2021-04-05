@@ -14,7 +14,7 @@ spec:
           creationTimestamp: null
         spec:
           containers:
-          - image: quay.io/rcook/tools:primer2
+          - image: quay.io/rcook/tools:primer4
             name: primer
             imagePullPolicy: Always
             command: ["/bin/bash", "-c", "/committer.sh"]
@@ -25,6 +25,8 @@ spec:
                 value: "deployments route svc pod configmap"
               - name: BRANCH
                 value: stage
+              - name: ACTION
+                value: "alert"
             volumeMounts:
               - mountPath: /keys
                 name: sshkey
@@ -41,5 +43,5 @@ spec:
               emptyDir: {}
           restartPolicy: Never
           serviceAccount: gitops-primer
-  schedule: '*/3 * * * *'
+  schedule: '*/5 * * * *'
 status: {}
