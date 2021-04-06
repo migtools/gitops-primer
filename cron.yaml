@@ -14,19 +14,21 @@ spec:
           creationTimestamp: null
         spec:
           containers:
-          - image: quay.io/rcook/tools:primer4
+            - image: quay.io/octo-emerging/gitops-primer:latest
             name: primer
             imagePullPolicy: Always
-            command: ["/bin/bash", "-c", "/committer.sh"]
+            command: ["sleep", "3h"]
             env:
               - name: REPO
                 value: git@github.com:cooktheryan/primer-poc.git
               - name: OBJECTS
-                value: "deployments route svc pod configmap"
+                value: "secrets deployments route svc pod configmap"
               - name: BRANCH
                 value: stage
               - name: ACTION
                 value: "alert"
+              - name: IGNORE_OBJECT
+                value: "secret/secure-key"
             volumeMounts:
               - mountPath: /keys
                 name: sshkey
