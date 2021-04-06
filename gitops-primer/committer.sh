@@ -33,7 +33,7 @@ git config --global user.email "rcook@redhat.com"
 for o in $OBJECTS; do 
   [ "$(ls -A /repo/$o)" ] ||  mkdir /repo/$o
   for i in `kubectl get $o | grep -v NAME | awk '{print $1}'`; do
-      kubectl get -o=json $o $i | jq --sort-keys 'del(
+      kubectl get -o=json $o/$i | jq --sort-keys 'del(
            .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration",
            .metadata.annotations."control-plane.alpha.kubernetes.io/leader",
            .metadata.uid,
@@ -49,6 +49,11 @@ done
 
 
 rm -rf pod/primer*
+if [[ -v IGNORE_OBJECT ]]
+  for i in ${IGNORE_OBJECT}; do
+    rm -rf ./${IGNORE_OBJECT}
+  done
+
 
 case "${ACTION}" in
 merge)
