@@ -49,10 +49,11 @@ done
 
 
 rm -rf pod/primer*
-if [[ -v IGNORE_OBJECT ]]
+if [[ -v IGNORE_OBJECT ]]; then
   for i in ${IGNORE_OBJECT}; do
-    rm -rf ./${IGNORE_OBJECT}
+    rm -rf ./${IGNORE_OBJECT};
   done
+fi
 
 
 case "${ACTION}" in
