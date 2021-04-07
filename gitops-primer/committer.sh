@@ -48,6 +48,7 @@ for o in $OBJECTS; do
 done
 
 rm -rf pod/primer*
+rm -rf secret/secret-key.yaml
 if [[ -v IGNORE_OBJECT ]]; then
   for i in ${IGNORE_OBJECT}; do
     rm -rf ./${IGNORE_OBJECT}.yaml;
