@@ -14,7 +14,7 @@ spec:
           creationTimestamp: null
         spec:
           containers:
-            - image: quay.io/octo-emerging/gitops-primer:latest
+          - image: quay.io/octo-emerging/gitops-primer:latest
             name: primer
             imagePullPolicy: Always
             command: ["sleep", "3h"]
