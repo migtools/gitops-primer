@@ -25,7 +25,7 @@ Host *
 SSHCONFIG
 
 # Setup the repository
-[ "$(ls -A /repo)" ] && echo "Repo is already cloned" || git clone $REPO /repo -q
+[ "$(ls -A /repo)" ] || git clone $REPO /repo -q
 cd /repo
 git fetch -q 
 git checkout $BRANCH -q
@@ -34,13 +34,15 @@ git config --global user.email "rcook@redhat.com"
 # Identify all objects
 EXCLUSIONS="events|machineautoscalers.autoscaling.openshift.io|credentialsrequests.cloudcredential.openshift.io|podnetworkconnectivitychecks.controlplane.operator.openshift.io|leases.coordination.k8s.io|machinehealthchecks.machine.openshift.io|machines.machine.openshift.io|machinesets.machine.openshift.io|baremetalhosts.metal3.io|pods.metrics.k8s.io|alertmanagerconfigs.monitoring.coreos.com|alertmanagers.monitoring.coreos.com|podmonitors.monitoring.coreos.com|volumesnapshots.snapshot.storage.k8s.io|profiles.tuned.openshift.io|tuneds.tuned.openshift.io|endpointslice.discovery.k8s.io|ippools.whereabouts.cni.cncf.io|overlappingrangeipreservations.whereabouts.cni.cncf.io|packagemanifests.packages.operators.coreos.com|endpointslice.discovery.k8s.io|endpoints"
 
-IGNORES="primer|rolebinding.rbac.authorization.k8s.io/system|${IGNORE_OBJECT}"
+IGNORES="primer|configmap/kube-root-ca.crt|rolebinding.rbac.authorization.k8s.io/system|${IGNORE_OBJECT}"
 
 RESOURCES=`kubectl api-resources --verbs=list --namespaced -o name | egrep -v $EXCLUSIONS | awk -F. '{print $1}'`
 
 # Generate yamls
 for o in $RESOURCES; do 
-  [ "$(ls -A /repo/$o)" ] ||  mkdir /repo/$o &> /dev/nul
+  if [[ ! -d /repo/$o ]]; then 
+       mkdir /repo/$o &> /dev/null
+  fi
   for i in `kubectl get $o --ignore-not-found | grep -v NAME | awk '{print $1}' | egrep -v ${IGNORES}`; do
       kubectl get -o=json $o $i | jq --sort-keys 'del(
             .metadata.annotations."control-plane.alpha.kubernetes.io/leader",
@@ -82,3 +84,4 @@ alert)
     error 1 "unknown action: ${ACTION}"
     ;;
 esac
+
