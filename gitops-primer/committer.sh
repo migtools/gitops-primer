@@ -35,7 +35,6 @@ git config --global user.email "rcook@redhat.com"
 EXCLUSIONS="events|machineautoscalers.autoscaling.openshift.io|credentialsrequests.cloudcredential.openshift.io|podnetworkconnectivitychecks.controlplane.operator.openshift.io|leases.coordination.k8s.io|machinehealthchecks.machine.openshift.io|machines.machine.openshift.io|machinesets.machine.openshift.io|baremetalhosts.metal3.io|pods.metrics.k8s.io|alertmanagerconfigs.monitoring.coreos.com|alertmanagers.monitoring.coreos.com|podmonitors.monitoring.coreos.com|volumesnapshots.snapshot.storage.k8s.io|profiles.tuned.openshift.io|tuneds.tuned.openshift.io|endpointslice.discovery.k8s.io|ippools.whereabouts.cni.cncf.io|overlappingrangeipreservations.whereabouts.cni.cncf.io|packagemanifests.packages.operators.coreos.com|endpointslice.discovery.k8s.io|endpoints"
 IGNORES="primer|rolebinding.rbac.authorization.k8s.io/system|${IGNORE_OBJECTS}"
 
-kubectl api-resources --verbs=list --namespaced -o name | egrep -v $EXCLUSIONS | xargs -n 1 kubectl get --show-kind --ignore-not-found  | grep -v NAME | awk '{print $1}' | egrep -v ${IGNORES}
 RESOURCES=`kubectl api-resources --verbs=list --namespaced -o name | egrep -v $EXCLUSIONS | awk -F. '{print $1}'`
 
 # Generate yamls
