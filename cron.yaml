@@ -21,8 +21,6 @@ spec:
             env:
               - name: REPO
                 value: git@github.com:cooktheryan/primer-poc.git
-              - name: OBJECTS
-                value: "secrets deployments route svc pod configmap"
               - name: BRANCH
                 value: stage
               - name: ACTION

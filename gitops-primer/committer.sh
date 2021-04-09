@@ -34,7 +34,7 @@ git config --global user.email "rcook@redhat.com"
 # Identify all objects
 EXCLUSIONS="events|machineautoscalers.autoscaling.openshift.io|credentialsrequests.cloudcredential.openshift.io|podnetworkconnectivitychecks.controlplane.operator.openshift.io|leases.coordination.k8s.io|machinehealthchecks.machine.openshift.io|machines.machine.openshift.io|machinesets.machine.openshift.io|baremetalhosts.metal3.io|pods.metrics.k8s.io|alertmanagerconfigs.monitoring.coreos.com|alertmanagers.monitoring.coreos.com|podmonitors.monitoring.coreos.com|volumesnapshots.snapshot.storage.k8s.io|profiles.tuned.openshift.io|tuneds.tuned.openshift.io|endpointslice.discovery.k8s.io|ippools.whereabouts.cni.cncf.io|overlappingrangeipreservations.whereabouts.cni.cncf.io|packagemanifests.packages.operators.coreos.com|endpointslice.discovery.k8s.io|endpoints"
 
-IGNORES="primer|configmap/kube-root-ca.crt|rolebinding.rbac.authorization.k8s.io/system|${IGNORE_OBJECT}"
+IGNORES="primer|secret-key|kube-root-ca.crt|image-puller|kubernetes.io/service-account-token|builder|default|default-token|default-dockercfg|deployer"
 
 RESOURCES=`kubectl api-resources --verbs=list --namespaced -o name | egrep -v $EXCLUSIONS | awk -F. '{print $1}'`
 
@@ -43,7 +43,7 @@ for o in $RESOURCES; do
   if [[ ! -d /repo/$o ]]; then 
        mkdir /repo/$o &> /dev/null
   fi
-  for i in `kubectl get $o --ignore-not-found | grep -v NAME | awk '{print $1}' | egrep -v ${IGNORES}`; do
+  for i in `kubectl get $o --ignore-not-found | egrep -v ${IGNORES} | grep -v NAME | awk '{print $1}'`; do
       kubectl get -o=json $o $i | jq --sort-keys 'del(
             .metadata.annotations."control-plane.alpha.kubernetes.io/leader",
             .metadata.annotations."deployment.kubernetes.io/revision",
