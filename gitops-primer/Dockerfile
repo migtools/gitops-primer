@@ -1,4 +1,4 @@
-FROM centos:8
+FROM registry.access.redhat.com/ubi8/ubi
 
 RUN yum update -y && \
     yum install -y \
