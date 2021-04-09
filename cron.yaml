@@ -28,7 +28,7 @@ spec:
               - name: ACTION
                 value: "alert"
               - name: IGNORE_OBJECT
-                value: "secret/secure-key"
+                value: "secrets/secret-key"
             volumeMounts:
               - mountPath: /keys
                 name: sshkey
@@ -39,7 +39,7 @@ spec:
           volumes:
             - name: sshkey
               secret:
-                secretName: secure-key
+                secretName: secret-key
                 defaultMode: 0600
             - name: repo
               emptyDir: {}
