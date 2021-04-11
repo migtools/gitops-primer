@@ -1,4 +1,4 @@
-name: Create Cluster
+name: Validate Primer
 
 on: pull_request
 
