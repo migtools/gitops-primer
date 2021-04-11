@@ -11,7 +11,7 @@ spec:
       containers:
       - image: quay.io/octo-emerging/gitops-primer:latest
         name: primer
-        command: ["sleep", "3h"]
+        command: ["/bin/sh", "-c", "/committer.sh"]
         env:
           - name: REPO
             value: git@github.com:cooktheryan/primer-poc.git
