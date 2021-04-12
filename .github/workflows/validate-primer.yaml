@@ -14,9 +14,9 @@ jobs:
       KUBERNETES_VERSION: ${{ matrix.KUBERNETES_VERSIONS }}
     steps:
       - name: Create k8s Kind Cluster
-        uses: helm/kind-action@v1.1.0
+        uses: engineerd/setup-kind@v0.5.0
         with:
-          node_image: "v1.20.1"
+          version: "v${KUBERNETES_VERSION}"
 
       - name: Checkout source
         uses: actions/checkout@v2
