@@ -59,6 +59,7 @@ for o in $RESOURCES; do
             .metadata.selfLink,
             .metadata.uid,
             .spec.clusterIP,
+            .spec.nodeName,
             .spec.progressDeadlineSeconds,
             .spec.revisionHistoryLimit,
             .spec.template.metadata.annotations."kubectl.kubernetes.io/restartedAt",
