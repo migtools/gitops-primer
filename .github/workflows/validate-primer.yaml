@@ -4,7 +4,14 @@ on: pull_request
 
 jobs:
   create-cluster:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        KUBERNETES_VERSIONS: ["1.20.2"]
+    env:
+      KUBECONFIG: /tmp/kubeconfig
+      KUBERNETES_VERSION: ${{ matrix.KUBERNETES_VERSIONS }}
     steps:
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.1.0
@@ -14,9 +21,9 @@ jobs:
 
       - name: Install kubectl
         run: |
-          curl -LO "https://storage.googleapis.com/kubernetes-release/release/v1.20.2/bin/linux/amd64/kubectl"
+          curl -LO "https://storage.googleapis.com/kubernetes-release/release/v${KUBERNETES_VERSION}/bin/linux/amd64/kubectl"
           sudo install ./kubectl /usr/local/bin/
           kubectl version --short --client
-          kubectl version --short --client | grep -q 1.20.2
+          kubectl version --short --client | grep -q ${KUBERNETES_VERSION}
 
           
