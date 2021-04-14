@@ -19,6 +19,18 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v2
 
+      - name: create deployment
+        run: |
+          kubectl create ns test
+          kubectl create deployment -n test nginx --image nginx --port 80
+          kubectl expose deployment -n test nginx 
+
       - name: create the job
         run: |
-          kubectl create -f job.yaml
+          kubectl create -f job.yaml -n test
+          kubectl create -f privs.yaml -n test
+
+      - name: create secret
+        run: |
+          echo ${{ secrets.SSH }} > /tmp/file
+          kubectl create secret generic secret-key --from-file=id_rsa=/tmp/file -n test
