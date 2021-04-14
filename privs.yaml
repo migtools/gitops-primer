@@ -27,7 +27,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: gitops-primer
-  namespace: test
+  namespace: developer
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
