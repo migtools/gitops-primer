@@ -68,6 +68,7 @@ for o in $RESOURCES; do
             .spec.volumeName,
             .spec.volumeMode,
             .status,
+	    .imagePullSecrets,
 	    .secrets
         )' | python3 -c 'import sys, yaml, json; yaml.safe_dump(json.load(sys.stdin), sys.stdout, default_flow_style=False)' > /repo/$o/$i.yaml ;
   done
