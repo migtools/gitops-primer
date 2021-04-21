@@ -16,7 +16,7 @@ Host *
   # Disables warning when IP is added to known_hosts
   CheckHostIP no
   # Use the identity provided via attached Secret
-  IdentityFile /keys/id_rsa
+  IdentityFile /keys/sshPrivateKey
   # Enable protocol-level keepalive to detect connection failure
   ServerAliveCountMax 4
   ServerAliveInterval 30
