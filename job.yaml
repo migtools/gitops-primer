@@ -37,3 +37,4 @@ spec:
         emptyDir: {}
       restartPolicy: Never
       serviceAccount: gitops-primer
+      imagePullPolicy: Always

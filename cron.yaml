@@ -17,14 +17,14 @@ spec:
           - image: quay.io/octo-emerging/gitops-primer:latest
             name: primer
             imagePullPolicy: Always
-            command: ["sleep", "3h"]
+            command: ["/bin/sh", "-c", "/committer.sh"] 
             env:
               - name: REPO
                 value: git@github.com:cooktheryan/primer-poc.git
               - name: BRANCH
                 value: stage
               - name: ACTION
-                value: "alert"
+                value: "merge"
               - name: IGNORE_OBJECT
                 value: "secrets/secret-key"
             volumeMounts:
@@ -37,11 +37,11 @@ spec:
           volumes:
             - name: sshkey
               secret:
-                secretName: secret-key
+                secretName: repo-1527867189
                 defaultMode: 0600
             - name: repo
               emptyDir: {}
           restartPolicy: Never
           serviceAccount: gitops-primer
-  schedule: '*/5 * * * *'
+  schedule: '*/2 * * * *'
 status: {}
