@@ -56,6 +56,7 @@ for o in $RESOURCES; do
             .metadata.creationTimestamp,
             .metadata.generation,
 	    .metdata.ownerReferences,
+	    .metadata.uid,
             .metadata.resourceVersion,
             .metadata.selfLink,
             .metadata.uid,
