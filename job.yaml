@@ -10,6 +10,7 @@ spec:
     spec:
       containers:
       - image: quay.io/octo-emerging/gitops-primer:latest
+        imagePullPolicy: Always
         name: primer
         command: ["/bin/sh", "-c", "/committer.sh"]
         env:
@@ -37,4 +38,3 @@ spec:
         emptyDir: {}
       restartPolicy: Never
       serviceAccount: gitops-primer
-      imagePullPolicy: Always
