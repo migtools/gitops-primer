@@ -1,0 +1,19 @@
+domain: primer.gitops
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: gitops-primer
+repo: github.com/cooktheryan/gitops-primer
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: primer.gitops
+  group: cache
+  kind: Primer
+  path: github.com/cooktheryan/gitops-primer/api/v1alpha1
+  version: v1alpha1
+version: "3"
