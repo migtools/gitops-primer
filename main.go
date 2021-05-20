@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	cachev1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
+	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
 	"github.com/cooktheryan/gitops-primer/controllers"
 	//+kubebuilder:scaffold:imports
 )
@@ -44,7 +44,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(cachev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(primerv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -71,19 +71,19 @@ func main() {
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "162233a0.primer.gitops",
+		LeaderElectionID:       "162233a0.gitops.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
-	if err = (&controllers.PrimerReconciler{
+	if err = (&controllers.ExtractReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Primer"),
+		Log:    ctrl.Log.WithName("controllers").WithName("Extract"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Primer")
+		setupLog.Error(err, "unable to create controller", "controller", "Extract")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

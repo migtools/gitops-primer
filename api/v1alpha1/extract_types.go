@@ -20,15 +20,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PrimerSpec defines the desired state of Primer
-type PrimerSpec struct {
+type ExtractSpec struct {
 	Branch string `json:"branch"`
-	Repo string `json:"repo"`
+	Repo   string `json:"repo"`
 	Action string `json:"action"`
 }
 
-// PrimerStatus defines the observed state of Primer
-type PrimerStatus struct {
+// ExtractStatus defines the observed state of Extract
+type ExtractStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 }
@@ -36,24 +35,24 @@ type PrimerStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Primer is the Schema for the primers API
-type Primer struct {
+// Extract is the Schema for the extracts API
+type Extract struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   PrimerSpec   `json:"spec,omitempty"`
-	Status PrimerStatus `json:"status,omitempty"`
+	Spec   ExtractSpec   `json:"spec,omitempty"`
+	Status ExtractStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// PrimerList contains a list of Primer
-type PrimerList struct {
+// ExtractList contains a list of Extract
+type ExtractList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Primer `json:"items"`
+	Items           []Extract `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Primer{}, &PrimerList{})
+	SchemeBuilder.Register(&Extract{}, &ExtractList{})
 }

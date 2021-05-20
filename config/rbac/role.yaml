@@ -7,9 +7,9 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - cache.primer.gitops
+  - batch
   resources:
-  - primers
+  - jobs
   verbs:
   - create
   - delete
@@ -19,15 +19,34 @@ rules:
   - update
   - watch
 - apiGroups:
-  - cache.primer.gitops
+  - ""
   resources:
-  - primers/finalizers
+  - pods
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - primer.gitops.io
+  resources:
+  - extracts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - primer.gitops.io
+  resources:
+  - extracts/finalizers
   verbs:
   - update
 - apiGroups:
-  - cache.primer.gitops
+  - primer.gitops.io
   resources:
-  - primers/status
+  - extracts/status
   verbs:
   - get
   - patch

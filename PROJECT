@@ -1,4 +1,4 @@
-domain: primer.gitops
+domain: gitops.io
 layout:
 - go.kubebuilder.io/v3
 plugins:
@@ -11,9 +11,9 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: primer.gitops
-  group: cache
-  kind: Primer
+  domain: gitops.io
+  group: primer
+  kind: Extract
   path: github.com/cooktheryan/gitops-primer/api/v1alpha1
   version: v1alpha1
 version: "3"

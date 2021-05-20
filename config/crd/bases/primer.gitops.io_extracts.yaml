@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: primers.cache.primer.gitops
+  name: extracts.primer.gitops.io
 spec:
-  group: cache.primer.gitops
+  group: primer.gitops.io
   names:
-    kind: Primer
-    listKind: PrimerList
-    plural: primers
-    singular: primer
+    kind: Extract
+    listKind: ExtractList
+    plural: extracts
+    singular: extract
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Primer is the Schema for the primers API
+        description: Extract is the Schema for the extracts API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,7 +34,6 @@ spec:
           metadata:
             type: object
           spec:
-            description: PrimerSpec defines the desired state of Primer
             properties:
               action:
                 type: string
@@ -48,7 +47,7 @@ spec:
             - repo
             type: object
           status:
-            description: PrimerStatus defines the observed state of Primer
+            description: ExtractStatus defines the observed state of Extract
             type: object
         type: object
     served: true

@@ -8,4 +8,4 @@ webhook:
   port: 9443
 leaderElection:
   leaderElect: true
-  resourceName: 162233a0.primer.gitops
+  resourceName: 162233a0.gitops.io
