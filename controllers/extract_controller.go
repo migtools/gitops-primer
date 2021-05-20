@@ -40,6 +40,8 @@ type ExtractReconciler struct {
 }
 
 func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	logger := r.Log.WithValues("Req.Namespace", req.Namespace, "Req.Name", req.Name)
+	logger.Info("Reconciling Primer")
 	extract := &primerv1alpha1.Extract{}
 	err := r.Get(ctx, req.NamespacedName, extract)
 	if err != nil {
@@ -65,10 +67,9 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{}, err
 }
 
-// jobToExtract returns a job object
 func (r *ExtractReconciler) jobToExtract(m *primerv1alpha1.Extract) *batchv1.Job {
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -83,11 +84,27 @@ func (r *ExtractReconciler) jobToExtract(m *primerv1alpha1.Extract) *batchv1.Job
 						Image:   "quay.io/octo-emerging/gitops-primer-extract:latest",
 						Name:    "primer-extract",
 						Command: []string{"/bin/sh", "-c", "/committer.sh"},
+						Env: []corev1.EnvVar{
+							{Name: "REPO", Value: m.Spec.Repo},
+							{Name: "BRANCH", Value: m.Spec.Branch},
+							{Name: "ACTION", Value: m.Spec.Action},
+						},
 						VolumeMounts: []corev1.VolumeMount{
-							{Name: "sshKeys", MountPath: "/keys"},
+							{Name: "sshkeys", MountPath: "/keys"},
 							{Name: "repo", MountPath: "/repo"},
 						},
 					}},
+					Volumes: []corev1.Volume{
+						{Name: "repo", VolumeSource: corev1.VolumeSource{
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
+						},
+						},
+						{Name: "sshkeys", VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName: "secret-key",
+							}},
+						},
+					},
 				},
 			},
 		},
