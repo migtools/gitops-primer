@@ -1,9 +1,73 @@
 name: Validate Primer
+on: 
+  push:
+    branches: ["master", "release*"]
+    tags: ["*"]
+  pull_request:
+    branches: ["master", "release*"]
+  schedule:
+    - cron: "15 4 * * 1"  # 4:15 every Monday
 
-on: pull_request
+env:
+  GO_VERSION: "1.15"
+  KIND_VERSION: "0.9.0"
+  GO111MODULE: "on"
+  OPERATOR_IMAGE: "quay.io/octo-emerging/gitops-primer"
+  EXTRACT_IMAGE: "quay.io/octo-emerging/gitops-primer-extract"
+
 
 jobs:
-  create-cluster:
+  build-operator:
+    name: Build-operator
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Test
+        run: make test
+
+      - name: Build operator container
+        run: make docker-build IMG=${OPERATOR_IMAGE}
+
+      - name: Export container image
+        run: docker save -o /tmp/image.tar ${OPERATOR_IMAGE}
+
+      - name: Save container as artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: primer-operator
+          path: /tmp/image.tar
+
+  build-extract:
+    name: Build-mover-rclone
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Build operator container
+        run: make -C mover-rclone image
+
+      - name: Export container image
+        run: docker save -o /tmp/image.tar ${EXTRACT_IMAGE}
+
+      - name: Save container as artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: extract-image
+          path: /tmp/image.tar
+
+  e2e:
+    name: End-to-end
+    needs: [build-operator, build-extract]
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -18,19 +82,127 @@ jobs:
 
       - name: Checkout source
         uses: actions/checkout@v2
+      - name: Load operator container artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: primer-operator
+          path: /tmp
 
-      - name: create deployment
+      - name: Import container image into cluster
         run: |
-          kubectl create ns test
-          kubectl create deployment -n test nginx --image nginx --port 80
-          kubectl expose deployment -n test nginx 
+          docker load -i /tmp/image.tar
+          docker inspect ${OPERATOR_IMAGE}
+          docker tag ${OPERATOR_IMAGE} ${OPERATOR_IMAGE}:ci-build
+          kind load docker-image "${OPERATOR_IMAGE}:ci-build"
 
-      - name: create the job
-        run: |
-          kubectl create -f job.yaml -n test
-          kubectl create -f privs.yaml -n test
+      - name: Load extract container artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: extract-image
+          path: /tmp
 
-      - name: create secret
+      - name: Import container image into cluster
         run: |
-          echo ${{ secrets.SSH }} > /tmp/file
-          kubectl create secret generic secret-key --from-file=id_rsa=/tmp/file -n test
+          docker load -i /tmp/image.tar
+          docker inspect ${EXTRACT_IMAGE}
+          docker tag ${EXTRACT_IMAGE} ${EXTRACT_IMAGE}:ci-build
+          kind load docker-image "${EXTRACT_IMAGE}:ci-build"
+
+      - name: Start operator
+        run: |
+          make deploy
+
+  e2e-success:
+    name: Successful e2e tests
+    needs: [build-operator, e2e, lint]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Success
+        run: echo "Previous steps were successful"
+
+  push-operator:
+    name: Push operator container to registry
+    needs: e2e-success
+    if: >
+      (github.event_name == 'push' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Load container artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: primer-operator
+          path: /tmp
+
+      - name: Import container image
+        run: |
+          docker load -i /tmp/image.tar
+          docker inspect ${OPERATOR_IMAGE}
+      - name: Login to registry
+        # If the registry server is specified in the image name, we use that.
+        # If the server isn't in the image name, default to docker.io
+        run: |
+          [[ "${OPERATOR_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          echo "Attempting docker login to: ${REGISTRY}"
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
+      - name: Push to registry (latest)
+        if: >
+          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          github.ref == 'refs/heads/master'
+        run: |
+          docker push "${OPERATOR_IMAGE}"
+      - name: Push to registry (version tag)
+        if: >
+          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          startsWith(github.ref, 'refs/tags/v')
+        run: |
+          [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*) ]] || exit 0
+          TAG="${BASH_REMATCH[1]}"
+          echo "Pushing to $TAG"
+          docker tag "${OPERATOR_IMAGE}" "${OPERATOR_IMAGE}:${TAG}"
+          docker push "${OPERATOR_IMAGE}:${TAG}"
+
+  push-rclone:
+    name: Push rclone container to registry
+    needs: e2e-success
+    if: >
+      (github.event_name == 'push' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Load container artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: scribe-mover-rclone-container
+          path: /tmp
+
+      - name: Import container image
+        run: |
+          docker load -i /tmp/image.tar
+          docker inspect ${EXTRACT_IMAGE}
+      - name: Login to registry
+        # If the registry server is specified in the image name, we use that.
+        # If the server isn't in the image name, default to docker.io
+        run: |
+          [[ "${EXTRACT_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          echo "Attempting docker login to: ${REGISTRY}"
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
+      - name: Push to registry (latest)
+        if: >
+          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          github.ref == 'refs/heads/master'
+        run: |
+          docker push "${EXTRACT_IMAGE}"
+      - name: Push to registry (version tag)
+        if: >
+          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          startsWith(github.ref, 'refs/tags/v')
+        run: |
+          [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*) ]] || exit 0
+          TAG="${BASH_REMATCH[1]}"
+          echo "Pushing to $TAG"
+          docker tag "${EXTRACT_IMAGE}" "${EXTRACT_IMAGE}:${TAG}"
+          docker push "${EXTRACT_IMAGE}:${TAG}"
+
