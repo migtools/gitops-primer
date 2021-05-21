@@ -130,26 +130,6 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, err
 }
 
-func (r *ExtractReconciler) bindingGenerate(m *primerv1alpha1.Extract) *rbacv1.RoleBinding {
-	accessrole := &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
-			Namespace: m.Namespace,
-		},
-	}
-	r.roleBinding.RoleRef = rbacv1.RoleRef{
-		APIGroup: "rbac.authorization.k8s.io",
-		Kind:     "Role",
-		Name:     m.Name,
-	}
-	r.roleBinding.Subjects = []rbacv1.Subject{
-		{Kind: "ServiceAccount", Name: m.Name},
-	}
-
-	controllerutil.SetControllerReference(m, accessrole, r.Scheme)
-	return accessrole
-}
-
 func (r *ExtractReconciler) roleGenerate(m *primerv1alpha1.Extract) *rbacv1.Role {
 	accessrole := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -178,6 +158,26 @@ func (r *ExtractReconciler) saGenerate(m *primerv1alpha1.Extract) *corev1.Servic
 	}
 	controllerutil.SetControllerReference(m, sacct, r.Scheme)
 	return sacct
+}
+
+func (r *ExtractReconciler) bindingGenerate(m *primerv1alpha1.Extract) *rbacv1.RoleBinding {
+	accessbinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      m.Name,
+			Namespace: m.Namespace,
+		},
+	}
+	accessbinding.RoleRef = rbacv1.RoleRef{
+		APIGroup: "rbac.authorization.k8s.io",
+		Name:     "bogo",
+		Kind:     "Role",
+	}
+	accessbinding.Subjects = []rbacv1.Subject{
+		{Kind: "ServiceAccount", Name: m.Name},
+	}
+
+	controllerutil.SetControllerReference(m, accessbinding, r.Scheme)
+	return accessbinding
 }
 
 func (r *ExtractReconciler) jobToExtract(m *primerv1alpha1.Extract) *batchv1.Job {
