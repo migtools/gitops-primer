@@ -163,8 +163,8 @@ jobs:
           docker tag "${OPERATOR_IMAGE}" "${OPERATOR_IMAGE}:${TAG}"
           docker push "${OPERATOR_IMAGE}:${TAG}"
 
-  push-rclone:
-    name: Push rclone container to registry
+  push-extract:
+    name: Push extract container to registry
     needs: e2e-success
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
@@ -175,7 +175,7 @@ jobs:
       - name: Load container artifact
         uses: actions/download-artifact@v1
         with:
-          name: scribe-mover-rclone-container
+          name: extract-image
           path: /tmp
 
       - name: Import container image
