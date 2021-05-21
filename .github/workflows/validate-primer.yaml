@@ -46,7 +46,7 @@ jobs:
           path: /tmp/image.tar
 
   build-extract:
-    name: Build-mover-rclone
+    name: Build-extract
     runs-on: ubuntu-20.04
 
     steps:
@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build operator container
-        run: make -C mover-rclone image
+        run: make -C extract image
 
       - name: Export container image
         run: docker save -o /tmp/image.tar ${EXTRACT_IMAGE}
