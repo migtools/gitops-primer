@@ -213,7 +213,7 @@ func (r *ExtractReconciler) jobToExtract(m *primerv1alpha1.Extract) *batchv1.Job
 						},
 						{Name: "sshkeys", VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
-								SecretName:  "secret-key",
+								SecretName:  m.Spec.Secret,
 								DefaultMode: &mode,
 							}},
 						},

@@ -6,3 +6,4 @@ spec:
   repo: git@github.com:cooktheryan/primer-poc.git
   branch: stage
   action: merge
+  secret: secret-key

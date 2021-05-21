@@ -41,10 +41,13 @@ spec:
                 type: string
               repo:
                 type: string
+              secret:
+                type: string
             required:
             - action
             - branch
             - repo
+            - secret
             type: object
           status:
             description: ExtractStatus defines the observed state of Extract

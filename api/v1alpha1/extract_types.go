@@ -24,6 +24,7 @@ type ExtractSpec struct {
 	Branch string `json:"branch"`
 	Repo   string `json:"repo"`
 	Action string `json:"action"`
+	Secret string `json:"secret"`
 }
 
 // ExtractStatus defines the observed state of Extract
