@@ -16,6 +16,4 @@ RUN yum update -y && \
 
 ADD committer.sh /
 
-USER 1001
-
 ENTRYPOINT [ "/bin/bash" ]
