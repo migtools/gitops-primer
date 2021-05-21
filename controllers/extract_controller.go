@@ -34,16 +34,6 @@ import (
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
 )
 
-//nolint:lll
-//nolint:funlen
-//+kubebuilder:rbac:groups=primer.gitops.io,resources=extracts,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=primer.gitops.io,resources=extracts/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=primer.gitops.io,resources=extracts/finalizers,verbs=update
-//+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
-
 type ExtractReconciler struct {
 	client.Client
 	Log         logr.Logger
@@ -51,6 +41,14 @@ type ExtractReconciler struct {
 	role        *rbacv1.Role
 	roleBinding *rbacv1.RoleBinding
 }
+
+//+kubebuilder:rbac:groups=primer.gitops.io,resources=extracts,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=primer.gitops.io,resources=extracts/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=primer.gitops.io,resources=extracts/finalizers,verbs=update
+//+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := r.Log.WithValues("Req.Namespace", req.Namespace, "Req.Name", req.Name)
@@ -141,7 +139,7 @@ func (r *ExtractReconciler) roleGenerate(m *primerv1alpha1.Extract) *rbacv1.Role
 		{
 			APIGroups: []string{"*"},
 			Resources: []string{"*"},
-			Verbs:     []string{"get", "list"},
+			Verbs:     []string{"create", "update", "get", "list"},
 		},
 	}
 
