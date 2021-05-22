@@ -49,6 +49,7 @@ type ExtractReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=*,verbs=get;list
 
 func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := r.Log.WithValues("Req.Namespace", req.Namespace, "Req.Name", req.Name)
@@ -139,7 +140,7 @@ func (r *ExtractReconciler) roleGenerate(m *primerv1alpha1.Extract) *rbacv1.Role
 		{
 			APIGroups: []string{"*"},
 			Resources: []string{"*"},
-			Verbs:     []string{"create", "update", "get", "list"},
+			Verbs:     []string{"get", "list"},
 		},
 	}
 
