@@ -1,9 +1,0 @@
-apiVersion: primer.gitops.io/v1alpha1
-kind: Extract
-metadata:
-  name: bogo
-spec:
-  repo: git@github.com:cooktheryan/primer-poc.git
-  branch: stage
-  action: merge
-  secret: secret-key
