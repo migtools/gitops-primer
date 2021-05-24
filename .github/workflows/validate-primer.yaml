@@ -112,6 +112,10 @@ jobs:
         run: |
           make deploy
 
+      - name: Run e2e test
+        run: |
+          make test-e2e
+
   e2e-success:
     name: Successful e2e tests
     needs: [build-operator, e2e]

@@ -91,6 +91,11 @@ test: manifests generate fmt vet ## Run tests.
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
 
+.PHONY: test-e2e
+test-e2e: kuttl
+	cd test-kuttl && $(KUTTL) test
+	rm -f test-kuttl/kubeconfig
+
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
@@ -157,6 +162,11 @@ bundle-build: ## Build the bundle image.
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
 	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
+.PHONY: kuttl
+KUTTL := $(PROJECT_DIR)/bin/kuttl
+KUTTL_URL := https://github.com/kudobuilder/kuttl/releases/download/v$(KUTTL_VERSION)/kubectl-kuttl_$(KUTTL_VERSION)_linux_x86_64
+kuttl: ## Download kuttl
+        $(call download-tool,$(KUTTL),$(KUTTL_URL))
 
 .PHONY: opm
 OPM = ./bin/opm
