@@ -1,3 +1,5 @@
+KUTTL_VERSION := 0.7.2
+
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
@@ -90,6 +92,11 @@ test: manifests generate fmt vet ## Run tests.
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
+
+.PHONY: test-e2e
+test-e2e: kuttl ## Run e2e tests. Requires cluster w/ Scribe already installed
+	cd test-kuttl && $(KUTTL) test
+	rm -f test-kuttl/kubeconfig
 
 ##@ Build
 
@@ -198,3 +205,24 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+##@ Download utilities
+
+OS := $(shell go env GOOS)
+ARCH := $(shell go env GOARCH)
+
+# download-tool will curl any file $2 and install it to $1.
+define download-tool
+@[ -f $(1) ] || { \
+set -e ;\
+echo "Downloading $(2)" ;\
+curl -sSLo "$(1)" "$(2)" ;\
+chmod a+x "$(1)" ;\
+}
+endef
+
+.PHONY: kuttl
+KUTTL := $(PROJECT_DIR)/bin/kuttl
+KUTTL_URL := https://github.com/kudobuilder/kuttl/releases/download/v$(KUTTL_VERSION)/kubectl-kuttl_$(KUTTL_VERSION)_linux_x86_64
+kuttl: ## Download kuttl
+	$(call download-tool,$(KUTTL),$(KUTTL_URL))

@@ -112,6 +112,14 @@ jobs:
         run: |
           make deploy
 
+      - name: hack
+        run: |
+          echo "${{ secrets.KEY }}" | kubectl create secret generic ssh-secret-key --from-literal=id_rsa="${{ secrets.KEY }}"
+
+      - name: Run e2e test
+        run: |
+          make test-e2e
+
   e2e-success:
     name: Successful e2e tests
     needs: [build-operator, e2e]
