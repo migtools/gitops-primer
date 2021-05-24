@@ -94,14 +94,9 @@ test: manifests generate fmt vet ## Run tests.
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
 
 .PHONY: test-e2e
-test-e2e: kuttl
+test-e2e: kuttl ## Run e2e tests. Requires cluster w/ Scribe already installed
 	cd test-kuttl && $(KUTTL) test
 	rm -f test-kuttl/kubeconfig
-
-.PHONY: test-e2e
-test-e2e: kuttl ## Run e2e tests. Requires cluster w/ Scribe already installed
-        cd test-kuttl && $(KUTTL) test
-        rm -f test-kuttl/kubeconfig
 
 ##@ Build
 
