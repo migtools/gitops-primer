@@ -168,7 +168,7 @@ func (r *ExtractReconciler) bindingGenerate(m *primerv1alpha1.Extract) *rbacv1.R
 	}
 	accessbinding.RoleRef = rbacv1.RoleRef{
 		APIGroup: "rbac.authorization.k8s.io",
-		Name:     "m.Name",
+		Name:     m.Name,
 		Kind:     "Role",
 	}
 	accessbinding.Subjects = []rbacv1.Subject{
