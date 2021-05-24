@@ -98,6 +98,11 @@ test-e2e: kuttl
 	cd test-kuttl && $(KUTTL) test
 	rm -f test-kuttl/kubeconfig
 
+.PHONY: test-e2e
+test-e2e: kuttl ## Run e2e tests. Requires cluster w/ Scribe already installed
+        cd test-kuttl && $(KUTTL) test
+        rm -f test-kuttl/kubeconfig
+
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
@@ -164,12 +169,6 @@ bundle-build: ## Build the bundle image.
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
 	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
-
-.PHONY: kuttl
-KUTTL := $(PROJECT_DIR)/bin/kuttl
-KUTTL_URL := https://github.com/kudobuilder/kuttl/releases/download/v$(KUTTL_VERSION)/kubectl-kuttl_$(KUTTL_VERSION)_linux_x86_64
-kuttl: ## Download kuttl
-        $(call download-tool,$(KUTTL),$(KUTTL_URL))
 
 .PHONY: opm
 OPM = ./bin/opm
