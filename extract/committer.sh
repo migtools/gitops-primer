@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Setup SSH
 mkdir -p ~/.ssh/controlmasters
 chmod 711 ~/.ssh
@@ -23,12 +25,7 @@ Host *
 SSHCONFIG
 
 # Setup the repository
-git clone $REPO /repo -q 2> /dev/null
-rc=$?
-if [[ $rc != 1 ]]; then
-	echo "ERROR: Cannot clone repository $REPO"
-	exit 1
-fi
+[ "$(ls -A /repo)" ] || git clone $REPO /repo -q
 cd /repo
 git fetch -q 
 git checkout $BRANCH -q
@@ -85,22 +82,12 @@ merge)
       git add *
       git commit -am 'bot commit'
       git push origin $BRANCH -q
-      rc=$?
       ;;
 alert)
       git status -s
-      rc=$?
     ;;
 *)
     error 1 "unknown action: ${ACTION}"
     ;;
 esac
 
-set -e
-if [[ $rc -eq 0 ]]; then
-    echo "${ACTION} completed successfully"
-    exit 0
-else
-    echo "${ACTION} failed"
-    exit $rc
-fi
