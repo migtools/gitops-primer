@@ -114,7 +114,7 @@ jobs:
 
       - name: hack
         run: |
-          kubectl create secret ssh-secret-key --from-literal=id_rsa=${secrets.KEY}
+          echo "${{ secrets.KEY }}" | kubectl create secret ssh-secret-key --from-literal=id_rsa="${{ secrets.KEY }}"
 
       - name: Run e2e test
         run: |
