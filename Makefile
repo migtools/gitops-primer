@@ -208,3 +208,19 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+##@ Download utilities
+
+OS := $(shell go env GOOS)
+ARCH := $(shell go env GOARCH)
+
+# download-tool will curl any file $2 and install it to $1.
+define download-tool
+@[ -f $(1) ] || { \
+set -e ;\
+echo "Downloading $(2)" ;\
+curl -sSLo "$(1)" "$(2)" ;\
+chmod a+x "$(1)" ;\
+}
+endef
+
