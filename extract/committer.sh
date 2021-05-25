@@ -82,6 +82,7 @@ merge)
       git add *
       git commit -am 'bot commit'
       git push origin $BRANCH -q
+      echo "${ACTION} to $BRANCH completed successfully"
       ;;
 alert)
       git status -s

@@ -114,7 +114,8 @@ jobs:
 
       - name: hack
         run: |
-          echo "${{ secrets.KEY }}" | kubectl create secret generic ssh-secret-key --from-literal=id_rsa="${{ secrets.KEY }}"
+          kubectl create ns test
+          echo "${{ secrets.KEY }}" | kubectl create secret generic ssh-secret-key -n test --from-literal=id_rsa="${{ secrets.KEY }}"
 
       - name: Run e2e test
         run: |
