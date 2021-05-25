@@ -6,6 +6,6 @@ timeout: 90
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: primer
+  name: ci
 status:
   succeeded: 1
