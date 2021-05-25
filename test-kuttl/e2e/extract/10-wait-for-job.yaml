@@ -2,5 +2,5 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 commands:
-  - timeout: 90
+  - timeout: 260
     command: ./10-wait-for-job.sh
