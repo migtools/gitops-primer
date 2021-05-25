@@ -2,6 +2,6 @@
 
 set -e -o pipefail
 
-kubectl create deployment test --image nginx
-kubectl create svc clusterip colors --tcp 8080
-kubectl create sa test
+kubectl create deployment test --image nginx -n test
+kubectl create svc clusterip colors --tcp 8080 -n test
+kubectl create sa test -n test
