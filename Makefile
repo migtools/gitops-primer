@@ -88,7 +88,7 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-test: manifests generate fmt vet ## Run tests.
+test: manifests generate lint fmt vet ## Run tests.
 	mkdir -p ${ENVTEST_ASSETS_DIR}
 	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.8.3/hack/setup-envtest.sh
 	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
@@ -165,6 +165,10 @@ bundle-build: ## Build the bundle image.
 bundle-push: ## Push the bundle image.
 	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
 
+.PHONY: lint
+lint: golangci-lint ## Lint source code
+	$(GOLANGCILINT) run ./...
+
 .PHONY: opm
 OPM = ./bin/opm
 opm: ## Download opm locally if necessary.
@@ -220,6 +224,14 @@ curl -sSLo "$(1)" "$(2)" ;\
 chmod a+x "$(1)" ;\
 }
 endef
+
+.PHONY: golangci-lint
+GOLANGCILINT := $(PROJECT_DIR)/bin/golangci-lint
+GOLANGCI_URL := https://install.goreleaser.com/github.com/golangci/golangci-lint.sh
+golangci-lint: ## Download golangci-lint
+ifeq (,$(wildcard $(GOLANGCILINT)))
+	curl -sSL $(GOLANGCI_URL) | sh -s -- -b $(PROJECT_DIR)/bin $(GOLANGCI_VERSION)
+endif
 
 .PHONY: kuttl
 KUTTL := $(PROJECT_DIR)/bin/kuttl
