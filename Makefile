@@ -230,7 +230,7 @@ GOLANGCILINT := $(PROJECT_DIR)/bin/golangci-lint
 GOLANGCI_URL := https://install.goreleaser.com/github.com/golangci/golangci-lint.sh
 golangci-lint: ## Download golangci-lint
 ifeq (,$(wildcard $(GOLANGCILINT)))
-        curl -sSL $(GOLANGCI_URL) | sh -s -- -b $(PROJECT_DIR)/bin $(GOLANGCI_VERSION)
+	curl -sSL $(GOLANGCI_URL) | sh -s -- -b $(PROJECT_DIR)/bin $(GOLANGCI_VERSION)
 endif
 
 .PHONY: kuttl
