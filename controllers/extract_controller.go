@@ -36,10 +36,8 @@ import (
 
 type ExtractReconciler struct {
 	client.Client
-	Log         logr.Logger
-	Scheme      *runtime.Scheme
-	role        *rbacv1.Role
-	roleBinding *rbacv1.RoleBinding
+	Log    logr.Logger
+	Scheme *runtime.Scheme
 }
 
 //+kubebuilder:rbac:groups=primer.gitops.io,resources=extracts,verbs=get;list;watch;create;update;patch;delete
@@ -52,10 +50,10 @@ type ExtractReconciler struct {
 //+kubebuilder:rbac:groups=*,resources=*,verbs=get;list
 
 func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := r.Log.WithValues("Req.Namespace", req.Namespace, "Req.Name", req.Name)
-	logger.Info("Reconciling Primer")
-	extract := &primerv1alpha1.Extract{}
-	err := r.Get(ctx, req.NamespacedName, extract)
+	log := r.Log.WithValues("Namespace", req.Namespace, "Name", req.Name)
+	log.Info("Reconciling Primer")
+	instance := &primerv1alpha1.Extract{}
+	err := r.Get(ctx, req.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -63,142 +61,176 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	// Check if the job already exists, if not create a new job.
-	found := &batchv1.Job{}
-	err = r.Get(ctx, types.NamespacedName{Name: extract.Name, Namespace: extract.Namespace}, found)
+	// Reconcile Job object
+	result, err := r.jobToExtract(instance, log)
 	if err != nil {
-		if errors.IsNotFound(err) {
-			// Define and create a new job.
-			job := r.jobToExtract(extract)
-			if err = r.Create(ctx, job); err != nil {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{Requeue: true}, nil
-		} else {
-			return ctrl.Result{}, err
-		}
+		return result, err
+	}
+	// Reconcile Service Account object
+	result, err = r.saGenerate(instance, log)
+	if err != nil {
+		return result, err
+	}
+	// Reconcile Role object
+	result, err = r.roleGenerate(instance, log)
+	if err != nil {
+		return result, err
+	}
+	// Reconcile Role Binding object
+	result, err = r.roleBindingGenerate(instance, log)
+	if err != nil {
+		return result, err
 	}
 
-	// Check if the SA already exists, if not create it
-	access := &corev1.ServiceAccount{}
-	err = r.Get(ctx, types.NamespacedName{Name: extract.Name, Namespace: extract.Namespace}, access)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// Define and create a new role.
-			sacct := r.saGenerate(extract)
-			if err = r.Create(ctx, sacct); err != nil {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{Requeue: true}, nil
-		} else {
-			return ctrl.Result{}, err
-		}
-	}
-
-	// Check if the role already exists, if not create it
-	r.role = &rbacv1.Role{}
-	err = r.Get(ctx, types.NamespacedName{Name: extract.Name, Namespace: extract.Namespace}, r.role)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// Define and create a new role.
-			rolecreate := r.roleGenerate(extract)
-			if err = r.Create(ctx, rolecreate); err != nil {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{Requeue: true}, nil
-		} else {
-			return ctrl.Result{}, err
-		}
-	}
-	// Check if the binding already exists, if not create it
-	r.roleBinding = &rbacv1.RoleBinding{}
-	err = r.Get(ctx, types.NamespacedName{Name: extract.Name, Namespace: extract.Namespace}, r.roleBinding)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			// Define and create a new role.
-			bindingcreate := r.bindingGenerate(extract)
-			if err = r.Create(ctx, bindingcreate); err != nil {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{Requeue: true}, nil
-		} else {
-			return ctrl.Result{}, err
-		}
-	}
-
-	return ctrl.Result{}, err
+	return ctrl.Result{}, nil
 }
 
-func (r *ExtractReconciler) roleGenerate(m *primerv1alpha1.Extract) *rbacv1.Role {
-	accessrole := &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
-			Namespace: m.Namespace,
-		},
-	}
-	accessrole.Rules = []rbacv1.PolicyRule{
-		{
-			APIGroups: []string{"*"},
-			Resources: []string{"*"},
-			Verbs:     []string{"get", "list"},
-		},
-	}
-
-	controllerutil.SetControllerReference(m, accessrole, r.Scheme)
-	return accessrole
+func (r *ExtractReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&primerv1alpha1.Extract{}).
+		Owns(&batchv1.Job{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&corev1.ServiceAccount{}).
+		Complete(r)
 }
 
-func (r *ExtractReconciler) saGenerate(m *primerv1alpha1.Extract) *corev1.ServiceAccount {
-	sacct := &corev1.ServiceAccount{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
-			Namespace: m.Namespace,
-		},
+func (r *ExtractReconciler) jobToExtract(cr *primerv1alpha1.Extract, log logr.Logger) (ctrl.Result, error) {
+	// Define a new Job object
+	job := newJobForCR(cr)
+
+	if err := ctrl.SetControllerReference(cr, job, r.Scheme); err != nil {
+		return ctrl.Result{}, err
 	}
-	controllerutil.SetControllerReference(m, sacct, r.Scheme)
-	return sacct
+
+	// Check if this Job already exists
+	jobFound := &batchv1.Job{}
+	err := r.Get(context.Background(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, jobFound)
+	if err != nil && errors.IsNotFound(err) {
+		log.Info("Creating a new Job", "Namespace", cr.Namespace, "Job Name", cr.Name)
+		err = r.Create(context.Background(), job)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		// Requeue the object to update its status
+		return ctrl.Result{Requeue: true}, nil
+	} else if err != nil {
+		return ctrl.Result{}, err
+	} else {
+		// Job already exists
+		log.Info("Job exists", "Namespace", jobFound.Namespace, "Job name", jobFound.Name)
+	}
+
+	return ctrl.Result{}, nil
 }
 
-func (r *ExtractReconciler) bindingGenerate(m *primerv1alpha1.Extract) *rbacv1.RoleBinding {
-	accessbinding := &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
-			Namespace: m.Namespace,
-		},
-	}
-	accessbinding.RoleRef = rbacv1.RoleRef{
-		APIGroup: "rbac.authorization.k8s.io",
-		Name:     m.Name,
-		Kind:     "Role",
-	}
-	accessbinding.Subjects = []rbacv1.Subject{
-		{Kind: "ServiceAccount", Name: m.Name},
+func (r *ExtractReconciler) saGenerate(cr *primerv1alpha1.Extract, log logr.Logger) (ctrl.Result, error) {
+	// Define a new Service object
+	serviceAcct := newServiceAccountForCR(cr)
+
+	if err := controllerutil.SetControllerReference(cr, serviceAcct, r.Scheme); err != nil {
+		return ctrl.Result{}, err
 	}
 
-	controllerutil.SetControllerReference(m, accessbinding, r.Scheme)
-	return accessbinding
+	// Check if this Service Account already exists
+	saFound := &corev1.ServiceAccount{}
+	err := r.Get(context.Background(), types.NamespacedName{Name: serviceAcct.Name, Namespace: serviceAcct.Namespace}, saFound)
+	if err != nil && errors.IsNotFound(err) {
+		log.Info("Creating a new Service Account", "Namespace", serviceAcct.Namespace, "Service Account Name", serviceAcct.Name)
+		err = r.Create(context.Background(), serviceAcct)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		// Service created successfully - don't requeue
+		return ctrl.Result{}, nil
+	} else if err != nil {
+		return ctrl.Result{}, err
+	} else {
+		// Service already exists
+		log.Info("Service Account exists", "Namespace", saFound.Namespace, "Service Account Name", saFound.Name)
+	}
+	// Service reconcile finished
+	return ctrl.Result{}, nil
 }
 
-func (r *ExtractReconciler) jobToExtract(m *primerv1alpha1.Extract) *batchv1.Job {
+func (r *ExtractReconciler) roleGenerate(cr *primerv1alpha1.Extract, log logr.Logger) (ctrl.Result, error) {
+	// Define a new Service object
+	accessRole := newRoleForCR(cr)
+
+	if err := controllerutil.SetControllerReference(cr, accessRole, r.Scheme); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Check if this Role already exists
+	roleFound := &rbacv1.Role{}
+	err := r.Get(context.Background(), types.NamespacedName{Name: accessRole.Name, Namespace: accessRole.Namespace}, roleFound)
+	if err != nil && errors.IsNotFound(err) {
+		log.Info("Creating a new Role", "Namespace", accessRole.Namespace, "Role", accessRole.Name)
+		err = r.Create(context.Background(), accessRole)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		// Service created successfully - don't requeue
+		return ctrl.Result{}, nil
+	} else if err != nil {
+		return ctrl.Result{}, err
+	} else {
+		// Service already exists
+		log.Info("Role exists", "Namespace", roleFound.Namespace, "Role", roleFound.Name)
+	}
+	// Service reconcile finished
+	return ctrl.Result{}, nil
+}
+
+func (r *ExtractReconciler) roleBindingGenerate(cr *primerv1alpha1.Extract, log logr.Logger) (ctrl.Result, error) {
+	// Define a new Service object
+	accessRoleBinding := newRoleBindingForCR(cr)
+
+	if err := controllerutil.SetControllerReference(cr, accessRoleBinding, r.Scheme); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// Check if this RoleBind already exists
+	bindingFound := &rbacv1.RoleBinding{}
+	err := r.Get(context.Background(), types.NamespacedName{Name: accessRoleBinding.Name, Namespace: accessRoleBinding.Namespace}, bindingFound)
+	if err != nil && errors.IsNotFound(err) {
+		log.Info("Creating a new Role Binding", "Namespace", accessRoleBinding.Namespace, "Role", accessRoleBinding.Name)
+		err = r.Create(context.Background(), accessRoleBinding)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		// Service created successfully - don't requeue
+		return ctrl.Result{}, nil
+	} else if err != nil {
+		return ctrl.Result{}, err
+	} else {
+		// Service already exists
+		log.Info("Role exists", "Namespace", bindingFound.Namespace, "Role", bindingFound.Name)
+	}
+	// Service reconcile finished
+	return ctrl.Result{}, nil
+}
+
+func newJobForCR(cr *primerv1alpha1.Extract) *batchv1.Job {
 	mode := int32(0600)
-	job := &batchv1.Job{
+	return &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
-			Namespace: m.Namespace,
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					RestartPolicy:      "Never",
-					ServiceAccountName: m.Name,
+					ServiceAccountName: cr.Name,
 					Containers: []corev1.Container{{
 						Image:   "quay.io/octo-emerging/gitops-primer-extract:latest",
 						Name:    "primer-extract",
 						Command: []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
-							{Name: "REPO", Value: m.Spec.Repo},
-							{Name: "BRANCH", Value: m.Spec.Branch},
-							{Name: "ACTION", Value: m.Spec.Action},
+							{Name: "REPO", Value: cr.Spec.Repo},
+							{Name: "BRANCH", Value: cr.Spec.Branch},
+							{Name: "ACTION", Value: cr.Spec.Action},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "sshkeys", MountPath: "/keys"},
@@ -212,7 +244,7 @@ func (r *ExtractReconciler) jobToExtract(m *primerv1alpha1.Extract) *batchv1.Job
 						},
 						{Name: "sshkeys", VolumeSource: corev1.VolumeSource{
 							Secret: &corev1.SecretVolumeSource{
-								SecretName:  m.Spec.Secret,
+								SecretName:  cr.Spec.Secret,
 								DefaultMode: &mode,
 							}},
 						},
@@ -221,14 +253,48 @@ func (r *ExtractReconciler) jobToExtract(m *primerv1alpha1.Extract) *batchv1.Job
 			},
 		},
 	}
-	controllerutil.SetControllerReference(m, job, r.Scheme)
-	return job
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *ExtractReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&primerv1alpha1.Extract{}).
-		Owns(&batchv1.Job{}).
-		Complete(r)
+// Returns a new Service account
+func newServiceAccountForCR(cr *primerv1alpha1.Extract) *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
+		},
+	}
+}
+
+// Returns a new Service account
+func newRoleForCR(cr *primerv1alpha1.Extract) *rbacv1.Role {
+	return &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"*"},
+				Resources: []string{"*"},
+				Verbs:     []string{"get", "list"},
+			},
+		},
+	}
+}
+
+func newRoleBindingForCR(cr *primerv1alpha1.Extract) *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      cr.Name,
+			Namespace: cr.Namespace,
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Name:     cr.Name,
+			Kind:     "Role",
+		},
+		Subjects: []rbacv1.Subject{
+			{Kind: "ServiceAccount", Name: cr.Name},
+		},
+	}
 }
