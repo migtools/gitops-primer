@@ -125,7 +125,7 @@ func (r *ExtractReconciler) jobToExtract(cr *primerv1alpha1.Extract, log logr.Lo
 }
 
 func (r *ExtractReconciler) saGenerate(cr *primerv1alpha1.Extract, log logr.Logger) (ctrl.Result, error) {
-	// Define a new Service object
+	// Define a new Service Account object
 	serviceAcct := newServiceAccountForCR(cr)
 
 	if err := controllerutil.SetControllerReference(cr, serviceAcct, r.Scheme); err != nil {
@@ -141,12 +141,12 @@ func (r *ExtractReconciler) saGenerate(cr *primerv1alpha1.Extract, log logr.Logg
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		// Service created successfully - don't requeue
+		// Service Account created successfully - don't requeue
 		return ctrl.Result{}, nil
 	} else if err != nil {
 		return ctrl.Result{}, err
 	} else {
-		// Service already exists
+		// Service Account already exists
 		log.Info("Service Account exists", "Namespace", saFound.Namespace, "Service Account Name", saFound.Name)
 	}
 	// Service reconcile finished
@@ -154,7 +154,7 @@ func (r *ExtractReconciler) saGenerate(cr *primerv1alpha1.Extract, log logr.Logg
 }
 
 func (r *ExtractReconciler) roleGenerate(cr *primerv1alpha1.Extract, log logr.Logger) (ctrl.Result, error) {
-	// Define a new Service object
+	// Define a new Role object
 	accessRole := newRoleForCR(cr)
 
 	if err := controllerutil.SetControllerReference(cr, accessRole, r.Scheme); err != nil {
@@ -170,27 +170,26 @@ func (r *ExtractReconciler) roleGenerate(cr *primerv1alpha1.Extract, log logr.Lo
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		// Service created successfully - don't requeue
+		// Role created successfully - don't requeue
 		return ctrl.Result{}, nil
 	} else if err != nil {
 		return ctrl.Result{}, err
 	} else {
-		// Service already exists
+		// Role already exists
 		log.Info("Role exists", "Namespace", roleFound.Namespace, "Role", roleFound.Name)
 	}
-	// Service reconcile finished
 	return ctrl.Result{}, nil
 }
 
 func (r *ExtractReconciler) roleBindingGenerate(cr *primerv1alpha1.Extract, log logr.Logger) (ctrl.Result, error) {
-	// Define a new Service object
+	// Define a new Role Binding object
 	accessRoleBinding := newRoleBindingForCR(cr)
 
 	if err := controllerutil.SetControllerReference(cr, accessRoleBinding, r.Scheme); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	// Check if this RoleBind already exists
+	// Check if this Role Binding already exists
 	bindingFound := &rbacv1.RoleBinding{}
 	err := r.Get(context.Background(), types.NamespacedName{Name: accessRoleBinding.Name, Namespace: accessRoleBinding.Namespace}, bindingFound)
 	if err != nil && errors.IsNotFound(err) {
@@ -199,15 +198,15 @@ func (r *ExtractReconciler) roleBindingGenerate(cr *primerv1alpha1.Extract, log 
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		// Service created successfully - don't requeue
+		// Role Binding created successfully - don't requeue
 		return ctrl.Result{}, nil
 	} else if err != nil {
 		return ctrl.Result{}, err
 	} else {
-		// Service already exists
+		// Role Binding already exists
 		log.Info("Role exists", "Namespace", bindingFound.Namespace, "Role", bindingFound.Name)
 	}
-	// Service reconcile finished
+	// Role Binding reconcile finished
 	return ctrl.Result{}, nil
 }
 
@@ -265,7 +264,7 @@ func newServiceAccountForCR(cr *primerv1alpha1.Extract) *corev1.ServiceAccount {
 	}
 }
 
-// Returns a new Service account
+// Returns a new Role
 func newRoleForCR(cr *primerv1alpha1.Extract) *rbacv1.Role {
 	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
@@ -282,6 +281,7 @@ func newRoleForCR(cr *primerv1alpha1.Extract) *rbacv1.Role {
 	}
 }
 
+// Returns a new Role Binding
 func newRoleBindingForCR(cr *primerv1alpha1.Extract) *rbacv1.RoleBinding {
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
