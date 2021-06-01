@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 
+	"reflect"
+
 	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -120,8 +122,55 @@ func (r *ExtractReconciler) jobToExtract(cr *primerv1alpha1.Extract, log logr.Lo
 		// Job already exists
 		log.Info("Job exists", "Namespace", jobFound.Namespace, "Job name", jobFound.Name)
 	}
+	jobComplete := isJobComplete(jobFound)
+	if jobComplete {
+		cr.Status.Conditions = append(cr.Status.Conditions, metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			LastTransitionTime: metav1.Now(),
+			Message:            "Extraction to git repo has completed",
+		})
+	} else {
+		cr.Status.Conditions = append(cr.Status.Conditions, metav1.Condition{
+			Status:             metav1.ConditionTrue,
+			LastTransitionTime: metav1.Now(),
+			Message:            "Extraction to git repo has not completed",
+		})
+	}
 
+	// Reconcile the new status for the instance
+	cr, err = r.updatePrimerStatus(cr, log)
+	if err != nil {
+		log.Error(err, "Failed to update ReverseWordsApp Status.")
+		return ctrl.Result{}, err
+	}
+	// Deployment reconcile finished
 	return ctrl.Result{}, nil
+}
+
+// updatePrimerStatus updates the Status of a given CR
+func (r *ExtractReconciler) updatePrimerStatus(cr *primerv1alpha1.Extract, log logr.Logger) (*primerv1alpha1.Extract, error) {
+	reverseWordsApp := &primerv1alpha1.Extract{}
+	err := r.Get(context.Background(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, reverseWordsApp)
+	if err != nil {
+		return reverseWordsApp, err
+	}
+
+	if !reflect.DeepEqual(cr.Status, reverseWordsApp.Status) {
+		log.Info("Updating ReverseWordsApp Status.")
+		// We need to update the status
+		err = r.Status().Update(context.Background(), cr)
+		if err != nil {
+			return cr, err
+		}
+		updatedReverseWordsApp := &primerv1alpha1.Extract{}
+		err = r.Get(context.Background(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, updatedReverseWordsApp)
+		if err != nil {
+			return cr, err
+		}
+		cr = updatedReverseWordsApp.DeepCopy()
+	}
+	return cr, nil
+
 }
 
 func (r *ExtractReconciler) saGenerate(cr *primerv1alpha1.Extract, log logr.Logger) (ctrl.Result, error) {
@@ -297,4 +346,14 @@ func newRoleBindingForCR(cr *primerv1alpha1.Extract) *rbacv1.RoleBinding {
 			{Kind: "ServiceAccount", Name: cr.Name},
 		},
 	}
+}
+
+// isDeploymentReady returns a true bool if the deployment has all its pods ready
+func isJobComplete(job *batchv1.Job) bool {
+	state := job.Status.Succeeded
+	jobComplete := false
+	if state == 1 {
+		jobComplete = true
+	}
+	return jobComplete
 }

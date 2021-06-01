@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/operator-framework/operator-lib/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,7 +29,7 @@ type ExtractSpec struct {
 
 // ExtractStatus defines the observed state of Extract
 type ExtractStatus struct {
-	Conditions status.Conditions `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
