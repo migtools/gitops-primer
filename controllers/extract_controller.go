@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	batchv1 "k8s.io/api/batch/v1"
@@ -32,6 +33,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
+)
+
+const (
+	// ConditionReconciled is a status condition type that indicates whether the
+	// CR has been successfully reconciled
+	ConditionReconciled = "Reconciled"
+	// ReconciledReasonComplete indicates the CR was successfully reconciled
+	ReconciledReasonComplete = "ReconcileComplete"
+	// ReconciledReasonError indicates an error was encountered while
+	// reconciling the CR
+	ReconciledReasonError = "ReconcileError"
 )
 
 type ExtractReconciler struct {
@@ -121,7 +133,60 @@ func (r *ExtractReconciler) jobToExtract(cr *primerv1alpha1.Extract, log logr.Lo
 		log.Info("Job exists", "Namespace", jobFound.Namespace, "Job name", jobFound.Name)
 	}
 
+	// Check if the deployment is ready
+	jobComplete := isJobComplete(jobFound)
+	if jobComplete {
+		cr.Status.Conditions = append(cr.Status.Conditions, metav1.Condition{
+			Type:               ConditionReconciled,
+			Status:             metav1.ConditionTrue,
+			LastTransitionTime: metav1.Now(),
+			Reason:             ReconciledReasonComplete,
+			Message:            "Extraction to git repo has completed",
+		})
+	} else {
+		// Update the status to not ready
+		cr.Status.Conditions = append(cr.Status.Conditions, metav1.Condition{
+			Type:               ConditionReconciled,
+			Status:             metav1.ConditionTrue,
+			Reason:             ReconciledReasonError,
+			LastTransitionTime: metav1.Now(),
+			Message:            "Extraction to git repo has not completed",
+		})
+	}
+
+	cr, err = r.updatePrimerStatus(cr, log)
+	if err != nil {
+		log.Error(err, "Failed to update Primer Status.")
+		return ctrl.Result{}, err
+	}
+
 	return ctrl.Result{}, nil
+}
+
+// updatePrimerStatus updates the Status of a given CR
+func (r *ExtractReconciler) updatePrimerStatus(cr *primerv1alpha1.Extract, log logr.Logger) (*primerv1alpha1.Extract, error) {
+	primerExtract := &primerv1alpha1.Extract{}
+	err := r.Get(context.Background(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, primerExtract)
+	if err != nil {
+		return primerExtract, err
+	}
+
+	if !reflect.DeepEqual(cr.Status, primerExtract.Status) {
+		log.Info("Updating Extract Status.")
+		// We need to update the status
+		err = r.Status().Update(context.Background(), cr)
+		if err != nil {
+			return cr, err
+		}
+		updatedprimerExtract := &primerv1alpha1.Extract{}
+		err = r.Get(context.Background(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, updatedprimerExtract)
+		if err != nil {
+			return cr, err
+		}
+		cr = updatedprimerExtract.DeepCopy()
+	}
+	return cr, nil
+
 }
 
 func (r *ExtractReconciler) saGenerate(cr *primerv1alpha1.Extract, log logr.Logger) (ctrl.Result, error) {
@@ -297,4 +362,14 @@ func newRoleBindingForCR(cr *primerv1alpha1.Extract) *rbacv1.RoleBinding {
 			{Kind: "ServiceAccount", Name: cr.Name},
 		},
 	}
+}
+
+// isDeploymentReady returns a true bool if the deployment has all its pods ready
+func isJobComplete(job *batchv1.Job) bool {
+	state := job.Status.Succeeded
+	jobComplete := false
+	if state == 1 {
+		jobComplete = true
+	}
+	return jobComplete
 }
