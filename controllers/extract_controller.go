@@ -94,6 +94,33 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return result, err
 	}
 
+	jobFound := &batchv1.Job{}
+	jobComplete := isJobComplete(jobFound)
+	if jobComplete {
+		instance.Status.Conditions = append(instance.Status.Conditions, metav1.Condition{
+			Type:               ConditionReconciled,
+			Status:             metav1.ConditionTrue,
+			LastTransitionTime: metav1.Now(),
+			Reason:             ReconciledReasonComplete,
+			Message:            "Extraction to git repo has completed",
+		})
+	} else {
+		// Update the status to not ready
+		instance.Status.Conditions = append(instance.Status.Conditions, metav1.Condition{
+			Type:               ConditionReconciled,
+			Status:             metav1.ConditionTrue,
+			Reason:             ReconciledReasonError,
+			LastTransitionTime: metav1.Now(),
+			Message:            "Extraction to git repo has not completed",
+		})
+	}
+	if !reflect.DeepEqual(instance.Status, instance.Status.Conditions) {
+		err := r.Status().Update(ctx, instance)
+		if err != nil {
+			log.Error(err, "Failed to update Extract status")
+			return ctrl.Result{}, err
+		}
+	}
 	return ctrl.Result{}, nil
 }
 
@@ -132,61 +159,7 @@ func (r *ExtractReconciler) jobToExtract(cr *primerv1alpha1.Extract, log logr.Lo
 		// Job already exists
 		log.Info("Job exists", "Namespace", jobFound.Namespace, "Job name", jobFound.Name)
 	}
-
-	// Check if the deployment is ready
-	jobComplete := isJobComplete(jobFound)
-	if jobComplete {
-		cr.Status.Conditions = append(cr.Status.Conditions, metav1.Condition{
-			Type:               ConditionReconciled,
-			Status:             metav1.ConditionTrue,
-			LastTransitionTime: metav1.Now(),
-			Reason:             ReconciledReasonComplete,
-			Message:            "Extraction to git repo has completed",
-		})
-	} else {
-		// Update the status to not ready
-		cr.Status.Conditions = append(cr.Status.Conditions, metav1.Condition{
-			Type:               ConditionReconciled,
-			Status:             metav1.ConditionTrue,
-			Reason:             ReconciledReasonError,
-			LastTransitionTime: metav1.Now(),
-			Message:            "Extraction to git repo has not completed",
-		})
-	}
-
-	cr, err = r.updatePrimerStatus(cr, log)
-	if err != nil {
-		log.Error(err, "Failed to update Primer Status.")
-		return ctrl.Result{}, err
-	}
-
 	return ctrl.Result{}, nil
-}
-
-// updatePrimerStatus updates the Status of a given CR
-func (r *ExtractReconciler) updatePrimerStatus(cr *primerv1alpha1.Extract, log logr.Logger) (*primerv1alpha1.Extract, error) {
-	primerExtract := &primerv1alpha1.Extract{}
-	err := r.Get(context.Background(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, primerExtract)
-	if err != nil {
-		return primerExtract, err
-	}
-
-	if !reflect.DeepEqual(cr.Status, primerExtract.Status) {
-		log.Info("Updating Extract Status.")
-		// We need to update the status
-		err = r.Status().Update(context.Background(), cr)
-		if err != nil {
-			return cr, err
-		}
-		updatedprimerExtract := &primerv1alpha1.Extract{}
-		err = r.Get(context.Background(), types.NamespacedName{Name: cr.Name, Namespace: cr.Namespace}, updatedprimerExtract)
-		if err != nil {
-			return cr, err
-		}
-		cr = updatedprimerExtract.DeepCopy()
-	}
-	return cr, nil
-
 }
 
 func (r *ExtractReconciler) saGenerate(cr *primerv1alpha1.Extract, log logr.Logger) (ctrl.Result, error) {
