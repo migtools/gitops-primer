@@ -36,6 +36,17 @@ import (
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
 )
 
+const (
+	// ConditionReconciled is a status condition type that indicates whether the
+	// CR has been successfully reconciled
+	ConditionReconciled = "Reconciled"
+	// ReconciledReasonComplete indicates the CR was successfully reconciled
+	ReconciledReasonComplete = "ReconcileComplete"
+	// ReconciledReasonError indicates an error was encountered while
+	// reconciling the CR
+	ReconciledReasonError = "ReconcileError"
+)
+
 type ExtractReconciler struct {
 	client.Client
 	Log    logr.Logger
@@ -125,13 +136,17 @@ func (r *ExtractReconciler) jobToExtract(cr *primerv1alpha1.Extract, log logr.Lo
 	jobComplete := isJobComplete(jobFound)
 	if jobComplete {
 		cr.Status.Conditions = append(cr.Status.Conditions, metav1.Condition{
+			Type:               ConditionReconciled,
 			Status:             metav1.ConditionTrue,
 			LastTransitionTime: metav1.Now(),
+			Reason:             ReconciledReasonComplete,
 			Message:            "Extraction to git repo has completed",
 		})
 	} else {
 		cr.Status.Conditions = append(cr.Status.Conditions, metav1.Condition{
+			Type:               ConditionReconciled,
 			Status:             metav1.ConditionTrue,
+			Reason:             ReconciledReasonError,
 			LastTransitionTime: metav1.Now(),
 			Message:            "Extraction to git repo has not completed",
 		})
@@ -140,10 +155,10 @@ func (r *ExtractReconciler) jobToExtract(cr *primerv1alpha1.Extract, log logr.Lo
 	// Reconcile the new status for the instance
 	cr, err = r.updatePrimerStatus(cr, log)
 	if err != nil {
-		log.Error(err, "Failed to update ReverseWordsApp Status.")
+		log.Error(err, "Failed to update Primer Status.")
 		return ctrl.Result{}, err
 	}
-	// Deployment reconcile finished
+	// job reconcile finished
 	return ctrl.Result{}, nil
 }
 
