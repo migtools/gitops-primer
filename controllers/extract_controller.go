@@ -291,5 +291,8 @@ func (r *ExtractReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&primerv1alpha1.Extract{}).
 		Owns(&batchv1.Job{}).
+		Owns(&rbacv1.Role{}).
+		Owns(&rbacv1.RoleBinding{}).
+		Owns(&corev1.ServiceAccount{}).
 		Complete(r)
 }
