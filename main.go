@@ -71,7 +71,7 @@ func main() {
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "162233a0.gitops.io",
+		LeaderElectionID:       "86f835c3.example.com",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -80,7 +80,6 @@ func main() {
 
 	if err = (&controllers.ExtractReconciler{
 		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Extract"),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Extract")
