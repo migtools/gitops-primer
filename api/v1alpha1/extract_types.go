@@ -29,7 +29,7 @@ type ExtractSpec struct {
 
 // ExtractStatus defines the observed state of Extract
 type ExtractStatus struct {
-	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	Completion bool `json:"completion,omitempty"`
 }
 
 //+kubebuilder:object:root=true
