@@ -32,7 +32,7 @@ git checkout $BRANCH -q
 git config --global user.email "rcook@redhat.com"
 
 # Identify all objects
-EXCLUSIONS="images|image.openshift.io|events|machineautoscalers.autoscaling.openshift.io|credentialsrequests.cloudcredential.openshift.io|podnetworkconnectivitychecks.controlplane.operator.openshift.io|leases.coordination.k8s.io|machinehealthchecks.machine.openshift.io|machines.machine.openshift.io|machinesets.machine.openshift.io|baremetalhosts.metal3.io|pods.metrics.k8s.io|alertmanagerconfigs.monitoring.coreos.com|alertmanagers.monitoring.coreos.com|podmonitors.monitoring.coreos.com|volumesnapshots.snapshot.storage.k8s.io|profiles.tuned.openshift.io|tuneds.tuned.openshift.io|endpointslice.discovery.k8s.io|ippools.whereabouts.cni.cncf.io|overlappingrangeipreservations.whereabouts.cni.cncf.io|packagemanifests.packages.operators.coreos.com|endpointslice.discovery.k8s.io|endpoints|pods"
+EXCLUSIONS="pipelinerun|taskrun|images|image.openshift.io|events|machineautoscalers.autoscaling.openshift.io|credentialsrequests.cloudcredential.openshift.io|podnetworkconnectivitychecks.controlplane.operator.openshift.io|leases.coordination.k8s.io|machinehealthchecks.machine.openshift.io|machines.machine.openshift.io|machinesets.machine.openshift.io|baremetalhosts.metal3.io|pods.metrics.k8s.io|alertmanagerconfigs.monitoring.coreos.com|alertmanagers.monitoring.coreos.com|podmonitors.monitoring.coreos.com|volumesnapshots.snapshot.storage.k8s.io|profiles.tuned.openshift.io|tuneds.tuned.openshift.io|endpointslice.discovery.k8s.io|ippools.whereabouts.cni.cncf.io|overlappingrangeipreservations.whereabouts.cni.cncf.io|packagemanifests.packages.operators.coreos.com|endpointslice.discovery.k8s.io|endpoints|pods"
 
 IGNORES="argocd|primer|secret-key|kube-root-ca.crt|image-puller|kubernetes.io/service-account-token|builder|default|default-token|default-dockercfg|deployer|openshift-gitops-operator|redhat-openshift-pipelines-operator|edit|admin|pipeline-dockercfg"
 
@@ -55,14 +55,14 @@ for o in $RESOURCES; do
             .metadata.managedFields,
             .metadata.creationTimestamp,
             .metadata.generation,
-	    .metadata.ownerReferences,
-	    .metadata.uid,
+            .metadata.ownerReferences,
+            .metadata.uid,
             .metadata.resourceVersion,
             .metadata.selfLink,
             .metadata.uid,
             .spec.clusterIP,
             .spec.clusterIPs,
-	    .data.sshPrivateKey,
+            .data.sshPrivateKey,
             .spec.progressDeadlineSeconds,
             .spec.revisionHistoryLimit,
             .spec.template.metadata.annotations."kubectl.kubernetes.io/restartedAt",
@@ -70,9 +70,9 @@ for o in $RESOURCES; do
             .spec.volumeName,
             .spec.volumeMode,
             .status,
-	    .imagePullSecrets,
-	    .secrets
-        )' | python3 -c 'import sys, yaml, json; yaml.safe_dump(json.load(sys.stdin), sys.stdout, default_flow_style=False)' > /repo/$o/$i.yaml ;
+	          .imagePullSecrets,
+	          .secrets
+        )' | python3 -c 'import sys, yaml, json; yaml.safe_dump(json.load(sys.stdin), sys.stdout, default_flow_style=False)' > /tmp/$o/$i.yaml ;
   done
 done
 
