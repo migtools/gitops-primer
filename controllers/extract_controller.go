@@ -192,7 +192,7 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 					ServiceAccountName: m.Name,
 					Containers: []corev1.Container{{
 						Image:   "quay.io/octo-emerging/gitops-primer-extract:latest",
-						Name:    "primer-extract",
+						Name:    m.Name,
 						Command: []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "REPO", Value: m.Spec.Repo},
