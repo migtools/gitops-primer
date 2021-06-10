@@ -17,7 +17,19 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/operator-framework/operator-lib/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	// ConditionReconciled is a status condition type that indicates whether the
+	// CR has been successfully reconciled
+	ConditionReconciled status.ConditionType = "Reconciled"
+	// ReconciledReasonComplete indicates the CR was successfully reconciled
+	ReconciledReasonComplete status.ConditionReason = "ReconcileComplete"
+	// ReconciledReasonError indicates an error was encountered while
+	// reconciling the CR
+	ReconciledReasonError status.ConditionReason = "ReconcileError"
 )
 
 type ExtractSpec struct {
@@ -29,7 +41,8 @@ type ExtractSpec struct {
 
 // ExtractStatus defines the observed state of Extract
 type ExtractStatus struct {
-	Completion bool `json:"completion,omitempty"`
+	Completion bool              `json:"completion,omitempty"`
+	Conditions status.Conditions `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true

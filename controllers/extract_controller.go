@@ -18,8 +18,8 @@ package controllers
 
 import (
 	"context"
-	"reflect"
 
+	"github.com/operator-framework/operator-lib/status"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -163,15 +163,33 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		log.Error(err, "Failed to list jobs", "Extract.Namespace", instance.Namespace, "Extract.Name", instance.Name)
 		return ctrl.Result{}, err
 	}
-	jobComplete := isJobComplete(found)
-	// Update status.Nodes if needed
-	if !reflect.DeepEqual(jobComplete, instance.Status.Completion) {
-		instance.Status.Completion = jobComplete
-		err := r.Status().Update(ctx, instance)
-		if err != nil {
-			log.Error(err, "Failed to update Extract status")
-			return ctrl.Result{}, err
-		}
+
+	if instance.Status.Conditions == nil {
+		instance.Status.Conditions = status.Conditions{}
+	}
+
+	// Set reconcile status condition
+	if err == nil {
+		instance.Status.Conditions.SetCondition(
+			status.Condition{
+				Type:    primerv1alpha1.ConditionReconciled,
+				Status:  corev1.ConditionTrue,
+				Reason:  primerv1alpha1.ReconciledReasonComplete,
+				Message: "Reconcile complete",
+			})
+	} else {
+		instance.Status.Conditions.SetCondition(
+			status.Condition{
+				Type:    primerv1alpha1.ConditionReconciled,
+				Status:  corev1.ConditionFalse,
+				Reason:  primerv1alpha1.ReconciledReasonError,
+				Message: err.Error(),
+			})
+	}
+
+	statusErr := r.Client.Status().Update(ctx, instance)
+	if err == nil { // Don't mask previous error
+		err = statusErr
 	}
 
 	return ctrl.Result{}, nil
