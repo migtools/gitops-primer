@@ -5,6 +5,7 @@ RUN yum update -y && \
       git \
       openssh-clients \
       python3 \
+      golang \
       jq \
     && yum clean all && \
     rm -rf /var/cache/yum && \
@@ -13,6 +14,7 @@ RUN yum update -y && \
     rm -rf /kubectl && \
     pip3 install pyyaml
 
+RUN git clone https://github.com/konveyor/crane.git && cd crane && go build main.go && mv main /usr/local/bin/crane && rm -rf ../crane
 
 ADD committer.sh /
 

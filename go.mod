@@ -8,6 +8,7 @@ require (
 	github.com/onsi/gomega v1.10.2
 	github.com/openshift/custom-resource-status v1.1.0
 	github.com/operator-framework/operator-lib v0.1.0
+	github.com/prometheus/client_golang v1.7.1
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.2
 	k8s.io/client-go v0.20.2
