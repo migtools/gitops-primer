@@ -19,7 +19,9 @@ package controllers
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	"github.com/operator-framework/operator-lib/status"
+	"github.com/prometheus/client_golang/prometheus"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -37,6 +39,7 @@ import (
 // ExtractReconciler reconciles a Extract object
 type ExtractReconciler struct {
 	client.Client
+	Log    logr.Logger
 	Scheme *runtime.Scheme
 }
 
@@ -195,12 +198,61 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
+// reconcileFunc is a function that partially reconciles an object. It returns a
+// bool indicating whether reconciling should continue and an error.
+type reconcileFunc func(logr.Logger) (bool, error)
+
+// reconcileBatch steps through a list of reconcile functions until one returns
+// false or an error.
+func reconcileBatch(l logr.Logger, reconcileFuncs ...reconcileFunc) (bool, error) {
+	for _, f := range reconcileFuncs {
+		if cont, err := f(l); !cont || err != nil {
+			return cont, err
+		}
+	}
+	return true, nil
+}
+
+func RunExtactBatch(
+	ctx context.Context,
+	instance *primerv1alpha1.Extract,
+	sr *ExtractReconciler,
+	logger logr.Logger,
+) (ctrl.Result, error) {
+	r := extractionReconciler{
+		sourceVolumeHandler: sourceVolumeHandler{
+			Ctx:                         ctx,
+			Instance:                    instance,
+			ReplicationSourceReconciler: *sr,
+			Options:                     &instance.Spec.Restic.ReplicationSourceVolumeOptions,
+		},
+		scribeMetrics: newScribeMetrics(prometheus.Labels{
+			"obj_name":      instance.Name,
+			"obj_namespace": instance.Namespace,
+			"role":          "source",
+			"method":        "restic",
+		}),
+	}
+	l := logger.WithValues("Extraction")
+
+	_, err := reconcileBatch(l,
+		r.EnsurePVC,
+		r.pvcForCache,
+		r.ensureServiceAccount,
+		r.ensureRepository,
+		r.ensureJob,
+		r.cleanupJob,
+		r.CleanupPVC,
+	)
+	return ctrl.Result{}, err
+}
+
 // jobForExtract returns a instance Job object
-func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
+func (r *ExtractionReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
 	mode := int32(0600)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
+			Name:      "primer-extract" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Spec: batchv1.JobSpec{
