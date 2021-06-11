@@ -36,46 +36,33 @@ EXCLUSIONS="pipelinerun|taskrun|images|image.openshift.io|events|machineautoscal
 
 IGNORES="argocd|primer|secret-key|kube-root-ca.crt|image-puller|kubernetes.io/service-account-token|builder|default|default-token|default-dockercfg|deployer|openshift-gitops-operator|redhat-openshift-pipelines-operator|edit|admin|pipeline-dockercfg"
 
-RESOURCES=`kubectl api-resources --verbs=list --namespaced -o name | egrep -v $EXCLUSIONS | awk -F. '{print $1}'`
 
-# Generate yamls
-for o in $RESOURCES; do 
-  if [[ ! -d /repo/$o ]]; then 
-       mkdir /repo/$o &> /dev/null
-  fi
-  for i in `kubectl get $o --ignore-not-found | egrep -v ${IGNORES} | grep -v NAME | awk '{print $1}'`; do
-      kubectl get -o=json $o $i | jq --sort-keys 'del(
-            .metadata.annotations."control-plane.alpha.kubernetes.io/leader",
-            .metadata.annotations."deployment.kubernetes.io/revision",
-            .metadata.annotations."kubectl.kubernetes.io/last-applied-configuration",
-            .metadata.annotations."kubernetes.io/service-account.uid",
-            .metadata.annotations."pv.kubernetes.io/bind-completed",
-            .metadata.annotations."pv.kubernetes.io/bound-by-controller",
-            .metadata.finalizers,
-            .metadata.managedFields,
-            .metadata.creationTimestamp,
-            .metadata.generation,
-            .metadata.ownerReferences,
-            .metadata.uid,
-            .metadata.resourceVersion,
-            .metadata.selfLink,
-            .metadata.uid,
-            .spec.clusterIP,
-            .spec.clusterIPs,
-            .data.sshPrivateKey,
-            .spec.progressDeadlineSeconds,
-            .spec.revisionHistoryLimit,
-            .spec.template.metadata.annotations."kubectl.kubernetes.io/restartedAt",
-            .spec.template.metadata.creationTimestamp,
-            .spec.volumeName,
-            .spec.volumeMode,
-            .status,
-	          .imagePullSecrets,
-	          .secrets
-        )' | python3 -c 'import sys, yaml, json; yaml.safe_dump(json.load(sys.stdin), sys.stdout, default_flow_style=False)' > /tmp/$o/$i.yaml ;
-  done
-done
+TOKEN=`cat /var/run/secrets/kubernetes.io/serviceaccount/token | base64 -w0`
+CA=`cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt |base64 -w0`
 
+# Generate KUBECONFIG
+echo "
+apiVersion: v1
+kind: Config
+clusters:
+- name: default-cluster
+  cluster:
+    certificate-authority-data: ${CA}
+contexts:
+- name: default-context
+  context:
+    cluster: default-cluster
+    namespace: default
+    user: default-user
+current-context: default-context
+users:
+- name: default-user
+  user:
+    token: ${TOKEN}
+" > /tmp/kubeconfig
+
+export KUBECONFIG=/tmp/kubeconfig
+crane export --export-dir /repo
 
 case "${ACTION}" in
 merge)
