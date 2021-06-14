@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/operator-framework/operator-lib/status"
 	batchv1 "k8s.io/api/batch/v1"
@@ -168,6 +169,17 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		instance.Status.Conditions = status.Conditions{}
 	}
 
+	jobComplete := isJobComplete(found)
+	// Update status.Nodes if needed
+	if !reflect.DeepEqual(jobComplete, instance.Status.Completed) {
+		instance.Status.Completed = jobComplete
+		err := r.Status().Update(ctx, instance)
+		if err != nil {
+			log.Error(err, "Failed to update Extract status")
+			return ctrl.Result{}, err
+		}
+	}
+
 	// Set reconcile status condition
 	if err == nil {
 		instance.Status.Conditions.SetCondition(
@@ -238,7 +250,6 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 			},
 		},
 	}
-	// Set Memcached instance as the owner and controller
 	ctrl.SetControllerReference(m, job, r.Scheme)
 	return job
 }
