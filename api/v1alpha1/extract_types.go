@@ -41,7 +41,7 @@ type ExtractSpec struct {
 
 // ExtractStatus defines the observed state of Extract
 type ExtractStatus struct {
-	Completion bool              `json:"completion,omitempty"`
+	Completed  bool              `json:"completed,omitempty"`
 	Conditions status.Conditions `json:"conditions,omitempty"`
 }
 
