@@ -81,7 +81,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Check if the Job already exists, if not create a new one
 	found := &batchv1.Job{}
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
+	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
 		// Define a new job
 		job := r.jobForExtract(instance)
 		log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
@@ -92,6 +92,8 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		// Job created successfully - return and requeue
 		return ctrl.Result{Requeue: true}, nil
+	} else if instance.Status.Completed {
+		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Job")
 		return ctrl.Result{}, err
@@ -100,7 +102,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Check if the Service Account already exists, if not create a new one
 	foundSA := &corev1.ServiceAccount{}
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, foundSA)
-	if err != nil && errors.IsNotFound(err) {
+	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
 		// Define a new Service Account
 		serviceAcct := r.saGenerate(instance)
 		log.Info("Creating a new Service Account", "serviceAcct.Namespace", serviceAcct.Namespace, "serviceAcct.Name", serviceAcct.Name)
@@ -111,6 +113,8 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		// Service Account created successfully - return and requeue
 		return ctrl.Result{Requeue: true}, nil
+	} else if instance.Status.Completed {
+		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Service Account")
 		return ctrl.Result{}, err
@@ -119,7 +123,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Check if the Role already exists, if not create a new one
 	foundRole := &rbacv1.Role{}
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, foundRole)
-	if err != nil && errors.IsNotFound(err) {
+	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
 		// Define a new Role
 		role := r.roleGenerate(instance)
 		log.Info("Creating a new Role", "role.Namespace", role.Namespace, "role.Name", role.Name)
@@ -130,6 +134,8 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		// Role created successfully - return and requeue
 		return ctrl.Result{Requeue: true}, nil
+	} else if instance.Status.Completed {
+		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Role")
 		return ctrl.Result{}, err
@@ -138,7 +144,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Check if the RoleBinding already exists, if not create a new one
 	foundRoleBinding := &rbacv1.RoleBinding{}
 	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, foundRoleBinding)
-	if err != nil && errors.IsNotFound(err) {
+	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
 		// Define a new Role Binding
 		roleBinding := r.roleBindingGenerate(instance)
 		log.Info("Creating a new Role Binding", "roleBinding.Namespace", roleBinding.Namespace, "roleBinding.Name", roleBinding.Name)
@@ -149,6 +155,8 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		// Role Binding created successfully - return and requeue
 		return ctrl.Result{Requeue: true}, nil
+	} else if instance.Status.Completed {
+		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Role Binding")
 		return ctrl.Result{}, err
