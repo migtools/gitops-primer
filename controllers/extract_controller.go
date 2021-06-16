@@ -114,6 +114,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// Service Account created successfully - return and requeue
 		return ctrl.Result{Requeue: true}, nil
 	} else if instance.Status.Completed {
+		log.Info("Job completed")
 		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Service Account")
@@ -159,17 +160,6 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Role Binding")
-		return ctrl.Result{}, err
-	}
-
-	// Update the Extract status with the pod names
-	// List the pods for this instance's Job
-	jobState := &batchv1.JobList{}
-	listOpts := []client.ListOption{
-		client.InNamespace(instance.Namespace),
-	}
-	if err = r.List(ctx, jobState, listOpts...); err != nil {
-		log.Error(err, "Failed to list jobs", "Extract.Namespace", instance.Namespace, "Extract.Name", instance.Name)
 		return ctrl.Result{}, err
 	}
 
