@@ -80,7 +80,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Check if the Job already exists, if not create a new one
 	found := &batchv1.Job{}
-	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, found)
+	err = r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, found)
 	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
 		// Define a new job
 		job := r.jobForExtract(instance)
@@ -101,7 +101,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Check if the Service Account already exists, if not create a new one
 	foundSA := &corev1.ServiceAccount{}
-	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, foundSA)
+	err = r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundSA)
 	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
 		// Define a new Service Account
 		serviceAcct := r.saGenerate(instance)
@@ -123,7 +123,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Check if the Role already exists, if not create a new one
 	foundRole := &rbacv1.Role{}
-	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, foundRole)
+	err = r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundRole)
 	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
 		// Define a new Role
 		role := r.roleGenerate(instance)
@@ -144,7 +144,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Check if the RoleBinding already exists, if not create a new one
 	foundRoleBinding := &rbacv1.RoleBinding{}
-	err = r.Get(ctx, types.NamespacedName{Name: instance.Name, Namespace: instance.Namespace}, foundRoleBinding)
+	err = r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundRoleBinding)
 	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
 		// Define a new Role Binding
 		roleBinding := r.roleBindingGenerate(instance)
@@ -173,7 +173,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		instance.Status.Completed = jobComplete
 		err := r.Status().Update(ctx, instance)
 		log.Info("Cleaning up Primer Resources")
-		r.Delete(ctx, found)
+		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationBackground))
 		r.Delete(ctx, foundRole)
 		r.Delete(ctx, foundRoleBinding)
 		r.Delete(ctx, foundSA)
@@ -215,14 +215,14 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 	mode := int32(0600)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
+			Name:      "primer-extract-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					RestartPolicy:      "Never",
-					ServiceAccountName: m.Name,
+					ServiceAccountName: "primer-extract-" + m.Name,
 					Containers: []corev1.Container{{
 						Image:   "quay.io/octo-emerging/gitops-primer-extract:latest",
 						Name:    m.Name,
@@ -261,7 +261,7 @@ func (r *ExtractReconciler) saGenerate(m *primerv1alpha1.Extract) *corev1.Servic
 	// Define a new Service Account object
 	serviceAcct := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
+			Name:      "primer-extract-" + m.Name,
 			Namespace: m.Namespace,
 		},
 	}
@@ -273,7 +273,7 @@ func (r *ExtractReconciler) saGenerate(m *primerv1alpha1.Extract) *corev1.Servic
 func (r *ExtractReconciler) roleGenerate(m *primerv1alpha1.Extract) *rbacv1.Role {
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
+			Name:      "primer-extract-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -292,16 +292,16 @@ func (r *ExtractReconciler) roleGenerate(m *primerv1alpha1.Extract) *rbacv1.Role
 func (r *ExtractReconciler) roleBindingGenerate(m *primerv1alpha1.Extract) *rbacv1.RoleBinding {
 	roleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
+			Name:      "primer-extract-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
-			Name:     m.Name,
+			Name:     "primer-extract-" + m.Name,
 			Kind:     "Role",
 		},
 		Subjects: []rbacv1.Subject{
-			{Kind: "ServiceAccount", Name: m.Name},
+			{Kind: "ServiceAccount", Name: "primer-extract-" + m.Name},
 		},
 	}
 	// Service reconcile finished
