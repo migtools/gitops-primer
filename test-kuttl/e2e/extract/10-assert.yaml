@@ -3,10 +3,9 @@ apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
 timeout: 90
 ---
-apiVersion: batch/v1
-kind: Job
+apiVersion: primer.gitops.io/v1alpha1
+kind: Extract
 metadata:
-  name: primer-extract-ci
-  namespace: test
+  name: ci
 status:
-  succeeded: 1
+  completed: 1
