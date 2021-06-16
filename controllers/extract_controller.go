@@ -173,7 +173,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		instance.Status.Completed = jobComplete
 		err := r.Status().Update(ctx, instance)
 		log.Info("Cleaning up Primer Resources")
-		r.Delete(ctx, found)
+		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationBackground))
 		r.Delete(ctx, foundRole)
 		r.Delete(ctx, foundRoleBinding)
 		r.Delete(ctx, foundSA)
