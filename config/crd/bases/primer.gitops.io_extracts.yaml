@@ -35,17 +35,17 @@ spec:
             type: object
           spec:
             properties:
-              action:
-                type: string
               branch:
+                type: string
+              email:
                 type: string
               repo:
                 type: string
               secret:
                 type: string
             required:
-            - action
             - branch
+            - email
             - repo
             - secret
             type: object

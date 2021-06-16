@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Setup SSH
 mkdir -p ~/.ssh/controlmasters
@@ -25,11 +26,11 @@ Host *
 SSHCONFIG
 
 # Setup the repository
-[ "$(ls -A /repo)" ] || git clone $REPO /repo -q
+git clone ${REPO} /repo -q
 cd /repo
 git fetch -q 
-git checkout $BRANCH -q
-git config --global user.email "rcook@redhat.com"
+git checkout ${BRANCH} -q
+git config --global user.email "${EMAIL}"
 
 # Identify all objects
 EXCLUSIONS="pipelinerun|taskrun|images|image.openshift.io|events|machineautoscalers.autoscaling.openshift.io|credentialsrequests.cloudcredential.openshift.io|podnetworkconnectivitychecks.controlplane.operator.openshift.io|leases.coordination.k8s.io|machinehealthchecks.machine.openshift.io|machines.machine.openshift.io|machinesets.machine.openshift.io|baremetalhosts.metal3.io|pods.metrics.k8s.io|alertmanagerconfigs.monitoring.coreos.com|alertmanagers.monitoring.coreos.com|podmonitors.monitoring.coreos.com|volumesnapshots.snapshot.storage.k8s.io|profiles.tuned.openshift.io|tuneds.tuned.openshift.io|endpointslice.discovery.k8s.io|ippools.whereabouts.cni.cncf.io|overlappingrangeipreservations.whereabouts.cni.cncf.io|packagemanifests.packages.operators.coreos.com|endpointslice.discovery.k8s.io|endpoints|pods"
@@ -64,18 +65,7 @@ users:
 export KUBECONFIG=/tmp/kubeconfig
 crane export --export-dir /repo
 
-case "${ACTION}" in
-merge)
-      git add *
-      git commit -am 'bot commit'
-      git push origin $BRANCH -q
-      echo "${ACTION} to $BRANCH completed successfully"
-      ;;
-alert)
-      git status -s
-    ;;
-*)
-    error 1 "unknown action: ${ACTION}"
-    ;;
-esac
-
+git add *
+git commit -am 'bot commit'
+git push origin ${BRANCH} -q
+echo "Merge to ${BRANCH} completed successfully"

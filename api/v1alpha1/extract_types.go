@@ -35,7 +35,7 @@ const (
 type ExtractSpec struct {
 	Branch string `json:"branch"`
 	Repo   string `json:"repo"`
-	Action string `json:"action"`
+	Email  string `json:"email"`
 	Secret string `json:"secret"`
 }
 
