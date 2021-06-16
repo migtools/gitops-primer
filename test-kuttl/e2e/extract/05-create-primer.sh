@@ -11,6 +11,6 @@ metadata:
 spec:
   repo: git@github.com:cooktheryan/primer-poc.git
   branch: ci
-  action: merge
+  email: rcook@redhat.com
   secret: secret-key
 EOF
