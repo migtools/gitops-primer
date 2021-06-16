@@ -3,7 +3,7 @@ apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
 timeout: 90
 ---
-apiVersion: primer.gitops.io/v1alpha
+apiVersion: primer.gitops.io/v1alpha1
 kind: Extract
 metadata:
   name: ci
