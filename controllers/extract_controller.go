@@ -114,6 +114,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		// Service Account created successfully - return and requeue
 		return ctrl.Result{Requeue: true}, nil
 	} else if instance.Status.Completed {
+		log.Info("Job completed")
 		return ctrl.Result{}, nil
 	} else if err != nil {
 		log.Error(err, "Failed to get Service Account")
@@ -162,17 +163,6 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	// Update the Extract status with the pod names
-	// List the pods for this instance's Job
-	jobState := &batchv1.JobList{}
-	listOpts := []client.ListOption{
-		client.InNamespace(instance.Namespace),
-	}
-	if err = r.List(ctx, jobState, listOpts...); err != nil {
-		log.Error(err, "Failed to list jobs", "Extract.Namespace", instance.Namespace, "Extract.Name", instance.Name)
-		return ctrl.Result{}, err
-	}
-
 	if instance.Status.Conditions == nil {
 		instance.Status.Conditions = status.Conditions{}
 	}
@@ -182,6 +172,11 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if !reflect.DeepEqual(jobComplete, instance.Status.Completed) {
 		instance.Status.Completed = jobComplete
 		err := r.Status().Update(ctx, instance)
+		log.Info("Cleaning up Primer Resources")
+		r.Delete(ctx, found)
+		r.Delete(ctx, foundRole)
+		r.Delete(ctx, foundRoleBinding)
+		r.Delete(ctx, foundSA)
 		if err != nil {
 			log.Error(err, "Failed to update Extract status")
 			return ctrl.Result{}, err
