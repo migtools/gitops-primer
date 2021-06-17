@@ -53,7 +53,7 @@ contexts:
 - name: default-context
   context:
     cluster: default-cluster
-    namespace: default
+    namespace: ${NAMESPACE}
     user: default-user
 current-context: default-context
 users:

@@ -1,4 +1,4 @@
-KUTTL_VERSION := 0.7.2
+KUTTL_VERSION := 0.10.0
 
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
