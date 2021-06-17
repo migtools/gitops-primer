@@ -110,7 +110,7 @@ jobs:
 
       - name: Start operator
         run: |
-          make run 
+          make deploy 
 
       - name: hack
         run: |
