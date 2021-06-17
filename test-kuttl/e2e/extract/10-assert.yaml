@@ -1,12 +1,10 @@
 ---
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
-timeout: 90
 ---
-apiVersion: primer.gitops.io/v1alpha1
-kind: Extract
+apiVersion: v1
+kind: Secret
 metadata:
-  name: ci
+  name: secret-key
   namespace: test
-status:
-  completed: true
+type: Opaque
