@@ -9,4 +9,4 @@ metadata:
   name: ci
   namespace: test
 status:
-  completed: 1
+  completed: true
