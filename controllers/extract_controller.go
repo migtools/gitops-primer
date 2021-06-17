@@ -231,6 +231,7 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 							{Name: "REPO", Value: m.Spec.Repo},
 							{Name: "BRANCH", Value: m.Spec.Branch},
 							{Name: "EMAIL", Value: m.Spec.Email},
+							{Name: "NAMESPACE"}, Value: m.Namespace},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "sshkeys", MountPath: "/keys"},
