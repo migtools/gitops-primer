@@ -1,7 +1,7 @@
 ---
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
-timeout: 90
+timeout: 900
 ---
 apiVersion: primer.gitops.io/v1alpha1
 kind: Extract
