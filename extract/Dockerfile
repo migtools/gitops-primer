@@ -12,7 +12,8 @@ RUN yum update -y && \
     install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && \
     rm -rf /kubectl
 
-RUN git clone https://github.com/konveyor/crane.git && cd crane && /usr/local/bin/go/bin/go build . && mv crane /usr/local/bin/crane && rm -rf ../crane
+#RUN git clone https://github.com/konveyor/crane.git && cd crane && /usr/local/bin/go/bin/go build . && mv crane /usr/local/bin/crane && rm -rf ../crane
+RUN git clone https://github.com/sseago/crane.git && cd crane && /usr/local/bin/go/bin/go build . && mv crane /usr/local/bin/crane && rm -rf ../crane
 
 RUN git clone https://github.com/cooktheryan/crane-lib.git && cd crane-lib/transform/binary-plugin/examples && GOPATH=/opt /usr/local/bin/go/bin/go install ./... && rm -rf ../../../crane-lib
 
