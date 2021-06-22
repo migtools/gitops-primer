@@ -17,6 +17,8 @@ RUN yum update -y && \
 
 RUN git clone https://github.com/konveyor/crane.git && cd crane && /usr/local/bin/go/bin/go build . && mv crane /usr/local/bin/crane && rm -rf ../crane
 
+ADD transform-plugins /opt/
+
 ADD committer.sh /
 
 ENTRYPOINT [ "/bin/bash" ]

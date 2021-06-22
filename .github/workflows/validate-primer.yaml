@@ -18,7 +18,6 @@ env:
 jobs:
   plugins:
     name: Build-plugins
-    needs: [plugins]
     runs-on: ubuntu-20.04
 
     steps:
