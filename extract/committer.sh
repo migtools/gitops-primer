@@ -29,7 +29,12 @@ SSHCONFIG
 git clone ${REPO} /repo -q
 cd /repo
 git fetch -q 
-git checkout -b ${BRANCH} -q
+exists=$(git ls-remote --heads origin ${BRANCH})
+if [[ -z ${existed_in_remote} ]]; then
+	git checkout ${BRANCH} -q
+else
+	git checkout -b ${BRANCH} -q
+fi
 git config --global user.email "${EMAIL}"
 
 # Identify all objects
