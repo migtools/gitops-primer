@@ -20,6 +20,8 @@ jobs:
     name: Build-plugins
     needs: [plugins]
     runs-on: ubuntu-20.04
+
+    steps:
       - name: Checkout source
         uses: actions/checkout@v2
 
