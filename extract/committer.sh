@@ -64,6 +64,8 @@ users:
 
 export KUBECONFIG=/tmp/kubeconfig
 crane export --export-dir /repo
+crane transform --export-dir /tmp/export --plugin-dir /opt/bin/ --transform-dir /tmp/transform
+crane apply --export-dir /tmp/export --transform-dir /tmp/transform --output-dir /tmp/outputs 
 
 git add *
 git commit -am 'bot commit'
