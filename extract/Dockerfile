@@ -13,7 +13,7 @@ RUN yum update -y && \
     rm -rf /kubectl
 
 #RUN git clone https://github.com/konveyor/crane.git && cd crane && /usr/local/bin/go/bin/go build . && mv crane /usr/local/bin/crane && rm -rf ../crane
-RUN git clone https://github.com/sseago/crane.git && cd crane && curl -o cmd/apply/apply.go https://raw.githubusercontent.com/konveyor/crane/e3f60737303385de1235cba489f4f248fe3aa5a2/cmd/apply/apply.go && git checkout transform-cmd && /usr/local/bin/go/bin/go build . && mv crane /usr/local/bin/crane && rm -rf ../crane
+RUN git clone https://github.com/sseago/crane.git && cd crane && git checkout transform-cmd && curl -o cmd/apply/apply.go https://raw.githubusercontent.com/konveyor/crane/e3f60737303385de1235cba489f4f248fe3aa5a2/cmd/apply/apply.go && /usr/local/bin/go/bin/go build . && mv crane /usr/local/bin/crane && rm -rf ../crane
 
 RUN git clone https://github.com/cooktheryan/crane-lib.git && cd crane-lib/transform/binary-plugin/examples && GOPATH=/opt /usr/local/bin/go/bin/go install ./... && rm -rf ../../../crane-lib
 
