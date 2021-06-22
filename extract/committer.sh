@@ -29,7 +29,7 @@ SSHCONFIG
 git clone ${REPO} /repo -q
 cd /repo
 git fetch -q 
-git checkout ${BRANCH} -q
+git checkout -b ${BRANCH} -q
 git config --global user.email "${EMAIL}"
 
 # Identify all objects
