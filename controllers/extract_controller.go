@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/operator-framework/operator-lib/status"
 	batchv1 "k8s.io/api/batch/v1"
@@ -64,8 +63,10 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Fetch the Extract instance
 	instance := &primerv1alpha1.Extract{}
-	err := r.Get(ctx, req.NamespacedName, instance)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
@@ -75,91 +76,100 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		// Error reading the object - requeue the request.
 		log.Error(err, "Failed to get Extract")
+		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
 
 	// Check if the Job already exists, if not create a new one
 	found := &batchv1.Job{}
-	err = r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, found)
-	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
-		// Define a new job
-		job := r.jobForExtract(instance)
-		log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-		err = r.Create(ctx, job)
-		if err != nil {
-			log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-			return ctrl.Result{}, err
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, found); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
 		}
-		// Job created successfully - return and requeue
-		return ctrl.Result{Requeue: true}, nil
-	} else if instance.Status.Completed {
-		return ctrl.Result{}, nil
-	} else if err != nil {
+		if errors.IsNotFound(err) {
+			// Define a new job
+			job := r.jobForExtract(instance)
+			log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+			if err = r.Create(ctx, job); err != nil {
+				log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Job created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
 		log.Error(err, "Failed to get Job")
+		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
 
 	// Check if the Service Account already exists, if not create a new one
 	foundSA := &corev1.ServiceAccount{}
-	err = r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundSA)
-	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
-		// Define a new Service Account
-		serviceAcct := r.saGenerate(instance)
-		log.Info("Creating a new Service Account", "serviceAcct.Namespace", serviceAcct.Namespace, "serviceAcct.Name", serviceAcct.Name)
-		err = r.Create(ctx, serviceAcct)
-		if err != nil {
-			log.Error(err, "Failed to create new Service Account", "serviceAcct.Namespace", serviceAcct.Namespace, "serviceAcct.Name", serviceAcct.Name)
-			return ctrl.Result{}, err
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundSA); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
 		}
-		// Service Account created successfully - return and requeue
-		return ctrl.Result{Requeue: true}, nil
-	} else if instance.Status.Completed {
-		log.Info("Job completed")
-		return ctrl.Result{}, nil
-	} else if err != nil {
+		if errors.IsNotFound(err) {
+			// Define a new Service Account
+			serviceAcct := r.saGenerate(instance)
+			log.Info("Creating a new Service Account", "serviceAcct.Namespace", serviceAcct.Namespace, "serviceAcct.Name", serviceAcct.Name)
+			if err := r.Create(ctx, serviceAcct); err != nil {
+				log.Error(err, "Failed to create new Service Account", "serviceAcct.Namespace", serviceAcct.Namespace, "serviceAcct.Name", serviceAcct.Name)
+
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Service Account created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
 		log.Error(err, "Failed to get Service Account")
+		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
 
 	// Check if the Role already exists, if not create a new one
 	foundRole := &rbacv1.Role{}
-	err = r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundRole)
-	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
-		// Define a new Role
-		role := r.roleGenerate(instance)
-		log.Info("Creating a new Role", "role.Namespace", role.Namespace, "role.Name", role.Name)
-		err = r.Create(ctx, role)
-		if err != nil {
-			log.Error(err, "Failed to create new Role", "role.Namespace", role.Namespace, "role.Name", role.Name)
-			return ctrl.Result{}, err
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundRole); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
 		}
-		// Role created successfully - return and requeue
-		return ctrl.Result{Requeue: true}, nil
-	} else if instance.Status.Completed {
-		return ctrl.Result{}, nil
-	} else if err != nil {
+		if errors.IsNotFound(err) {
+			// Define a new Role
+			role := r.roleGenerate(instance)
+			log.Info("Creating a new Role", "role.Namespace", role.Namespace, "role.Name", role.Name)
+			if err := r.Create(ctx, role); err != nil {
+				log.Error(err, "Failed to create new Role", "role.Namespace", role.Namespace, "role.Name", role.Name)
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Role created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
 		log.Error(err, "Failed to get Role")
+		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
 
 	// Check if the RoleBinding already exists, if not create a new one
 	foundRoleBinding := &rbacv1.RoleBinding{}
-	err = r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundRoleBinding)
-	if !instance.Status.Completed && err != nil && errors.IsNotFound(err) {
-		// Define a new Role Binding
-		roleBinding := r.roleBindingGenerate(instance)
-		log.Info("Creating a new Role Binding", "roleBinding.Namespace", roleBinding.Namespace, "roleBinding.Name", roleBinding.Name)
-		err = r.Create(ctx, roleBinding)
-		if err != nil {
-			log.Error(err, "Failed to create new Role Binding", "roleBinding.Namespace", roleBinding.Namespace, "roleBinding.Name", roleBinding.Name)
-			return ctrl.Result{}, err
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundRoleBinding); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
 		}
-		// Role Binding created successfully - return and requeue
-		return ctrl.Result{Requeue: true}, nil
-	} else if instance.Status.Completed {
-		return ctrl.Result{}, nil
-	} else if err != nil {
+		if errors.IsNotFound(err) {
+			// Define a new Role Binding
+			roleBinding := r.roleBindingGenerate(instance)
+			log.Info("Creating a new Role Binding", "roleBinding.Namespace", roleBinding.Namespace, "roleBinding.Name", roleBinding.Name)
+			if err := r.Create(ctx, roleBinding); err != nil {
+				log.Error(err, "Failed to create new Role Binding", "roleBinding.Namespace", roleBinding.Namespace, "roleBinding.Name", roleBinding.Name)
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Role Binding created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
 		log.Error(err, "Failed to get Role Binding")
+		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
 
@@ -167,24 +177,22 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		instance.Status.Conditions = status.Conditions{}
 	}
 
-	jobComplete := isJobComplete(found)
 	// Update status.Nodes if needed
-	if !reflect.DeepEqual(jobComplete, instance.Status.Completed) {
-		instance.Status.Completed = jobComplete
-		err := r.Status().Update(ctx, instance)
+	instance.Status.Completed = isJobComplete(found)
+	if instance.Status.Completed {
+		log.Info("Job completed")
 		log.Info("Cleaning up Primer Resources")
+		if err := r.Status().Update(ctx, instance); err != nil {
+			log.Error(err, "Failed to update Extract status")
+			updateErrCondition(instance, err)
+			return ctrl.Result{}, err
+		}
 		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationBackground))
 		r.Delete(ctx, foundRole)
 		r.Delete(ctx, foundRoleBinding)
 		r.Delete(ctx, foundSA)
-		if err != nil {
-			log.Error(err, "Failed to update Extract status")
-			return ctrl.Result{}, err
-		}
-	}
 
-	// Set reconcile status condition
-	if err == nil {
+		// Set reconcile status condition complete
 		instance.Status.Conditions.SetCondition(
 			status.Condition{
 				Type:    primerv1alpha1.ConditionReconciled,
@@ -192,27 +200,25 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				Reason:  primerv1alpha1.ReconciledReasonComplete,
 				Message: "Reconcile complete",
 			})
-	} else {
-		instance.Status.Conditions.SetCondition(
-			status.Condition{
-				Type:    primerv1alpha1.ConditionReconciled,
-				Status:  corev1.ConditionFalse,
-				Reason:  primerv1alpha1.ReconciledReasonError,
-				Message: err.Error(),
-			})
 	}
-
-	statusErr := r.Client.Status().Update(ctx, instance)
-	if err == nil { // Don't mask previous error
-		err = statusErr
-	}
-
 	return ctrl.Result{}, nil
 }
 
+func updateErrCondition(instance *primerv1alpha1.Extract, err error) {
+	instance.Status.Conditions.SetCondition(
+		status.Condition{
+			Type:    primerv1alpha1.ConditionReconciled,
+			Status:  corev1.ConditionFalse,
+			Reason:  primerv1alpha1.ReconciledReasonError,
+			Message: err.Error(),
+		})
+}
+
 // jobForExtract returns a instance Job object
+// TODO: fix OpenShift requires privileged pod and admin to run privileged pod
 func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
 	mode := int32(0600)
+	p := true
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-extract-" + m.Name,
@@ -224,8 +230,11 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 					RestartPolicy:      "Never",
 					ServiceAccountName: "primer-extract-" + m.Name,
 					Containers: []corev1.Container{{
-						Image:   "quay.io/octo-emerging/gitops-primer-extract:latest",
-						Name:    m.Name,
+						Image: "quay.io/octo-emerging/gitops-primer-extract:latest",
+						Name:  m.Name,
+						SecurityContext: &corev1.SecurityContext{
+							Privileged: &p,
+						},
 						Command: []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "REPO", Value: m.Spec.Repo},
@@ -311,12 +320,7 @@ func (r *ExtractReconciler) roleBindingGenerate(m *primerv1alpha1.Extract) *rbac
 }
 
 func isJobComplete(job *batchv1.Job) bool {
-	state := job.Status.Succeeded
-	jobComplete := false
-	if state == 1 {
-		jobComplete = true
-	}
-	return jobComplete
+	return job.Status.Succeeded == 1
 }
 
 // SetupWithManager sets up the controller with the Manager.
