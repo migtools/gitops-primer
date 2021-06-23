@@ -17,29 +17,6 @@ env:
 
 
 jobs:
-  build-crane:
-    name: Build-crane
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Build crane
-        run: |
-          git clone https://github.com/sseago/crane.git
-          cd crane
-          git checkout transform-cmd
-          curl -o cmd/apply/apply.go https://raw.githubusercontent.com/konveyor/crane/e3f60737303385de1235cba489f4f248fe3aa5a2/cmd/apply/apply.go
-          go build .
-
-      - name: Save artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: crane
-          path: crane/crane
-
   build-plugins:
     name: Build-plugins
     runs-on: ubuntu-20.04
@@ -91,7 +68,7 @@ jobs:
 
   build-extract:
     name: Build-extract
-    needs: [build-crane, build-plugins]
+    needs: [build-plugins]
     runs-on: ubuntu-20.04
 
     steps:
@@ -106,12 +83,6 @@ jobs:
         with:
           name: plugins
           path: extract/transform-plugins/
-
-      - name: Load crane artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: crane
-          path: extract/
 
       - name: Build operator container
         run: make -C extract image
