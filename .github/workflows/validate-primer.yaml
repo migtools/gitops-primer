@@ -32,10 +32,11 @@ jobs:
       - name: Create binaries
         run: make build-plugins
 
-      - name: look for files
-        run: |
-          export PATH=$PATH:$(go env GOPATH)/bin
-          which whiteout-pods
+      - name: Save artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: plugins
+          path: /home/runner/go/bin/
 
   build-operator:
     name: Build-operator
