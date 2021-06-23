@@ -17,6 +17,6 @@ ADD transform-plugins/ /opt/
 
 ADD committer.sh /
 
-RUN chmod chmod +x /opt/*
+RUN chmod +x /opt/*
 
 ENTRYPOINT [ "/bin/bash" ]
