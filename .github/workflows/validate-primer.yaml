@@ -28,7 +28,7 @@ jobs:
 
       - name: Build crane
         run: |
-          apt-get install libc6
+          ldd --version ldd
           git clone https://github.com/konveyor/crane.git
           cd crane
           go build .
