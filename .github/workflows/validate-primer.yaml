@@ -28,10 +28,8 @@ jobs:
 
       - name: Build crane
         run: |
-          git clone https://github.com/sseago/crane.git
+          git clone https://github.com/konveyor/crane.git
           cd crane
-          git checkout transform-cmd
-          curl -o cmd/apply/apply.go https://raw.githubusercontent.com/konveyor/crane/e3f60737303385de1235cba489f4f248fe3aa5a2/cmd/apply/apply.go
           go build .
 
       - name: Save artifacts
