@@ -5,13 +5,14 @@ RUN yum update -y && \
       git \
       openssh-clients && \ 
     yum clean all && \
-    rm -rf /var/cache/yum
+    rm -rf /var/cache/yum && \
+    curl -sSL "https://golang.org/dl/go1.16.5.linux-amd64.tar.gz" | tar -xz -C /usr/local/bin/
 
 ADD transform-plugins/ /opt/
 
 ADD committer.sh /
 
-ADD crane /usr/local/bin
+RUN git clone https://github.com/konveyor/crane.git && cd crane && curl -o cmd/apply/apply.go https://github.com/konveyor/crane/blob/d4d25f6ff08b4a24279d95a89cd5c2b17e75a6f0/cmd/apply/apply.go && /usr/local/bin/go/bin/go build . && mv crane /usr/local/bin/crane && rm -rf ../crane
 
 RUN chmod +x /usr/local/bin/crane && chmod +x /opt/*
 
