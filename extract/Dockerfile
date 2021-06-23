@@ -16,8 +16,6 @@ ADD transform-plugins/ /opt/
 
 ADD committer.sh /
 
-ADD crane /usr/local/bin
-
-RUN chmod +x /usr/local/bin/crane && chmod +x /opt/*
+RUN chmod chmod +x /opt/*
 
 ENTRYPOINT [ "/bin/bash" ]
