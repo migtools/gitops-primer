@@ -68,11 +68,21 @@ jobs:
 
   build-extract:
     name: Build-extract
+    needs: [build-plugins]
     runs-on: ubuntu-20.04
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
+
+      - name: create transform-plugin dir
+        run: mkdir extract/transform-plugins
+
+      - name: Load binary artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: plugins
+          path: extract/transform-plugins/
 
       - name: Build operator container
         run: make -C extract image
@@ -88,7 +98,7 @@ jobs:
 
   e2e:
     name: End-to-end
-    needs: [build-operator, build-extract]
+    needs: [build-operator, build-extract, build-plugins]
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
