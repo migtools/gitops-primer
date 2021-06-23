@@ -29,7 +29,12 @@ SSHCONFIG
 git clone ${REPO} /repo -q
 cd /repo
 git fetch -q 
-git checkout ${BRANCH} -q
+exists=$(git ls-remote --heads origin ${BRANCH})
+if [[ -z ${existed_in_remote} ]]; then
+	git checkout ${BRANCH} -q
+else
+	git checkout -b ${BRANCH} -q
+fi
 git config --global user.email "${EMAIL}"
 
 # Identify all objects
@@ -63,7 +68,11 @@ users:
 " > /tmp/kubeconfig
 
 export KUBECONFIG=/tmp/kubeconfig
-crane export --export-dir /repo
+crane export --export-dir /tmp/export
+crane transform --export-dir /tmp/export --plugin-dir /opt/bin/ --transform-dir /tmp/transform
+crane apply --export-dir /tmp/export --transform-dir /tmp/transform --output-dir /tmp/outputs 
+rm -rf /repo/${NAMESPACE}
+cp -rp /tmp/outputs/resources/ /repo
 
 git add *
 git commit -am 'bot commit'
