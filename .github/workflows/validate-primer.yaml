@@ -107,6 +107,12 @@ jobs:
           name: plugins
           path: extract/transform-plugins/
 
+      - name: Load crane artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: crane
+          path: extract/
+
       - name: Build operator container
         run: make -C extract image
 
