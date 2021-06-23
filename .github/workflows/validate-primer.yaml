@@ -17,6 +17,50 @@ env:
 
 
 jobs:
+  build-crane:
+    name: Build-crane
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build crane
+        run: |
+          git clone https://github.com/sseago/crane.git
+          cd crane
+          git checkout transform-cmd
+          curl -o cmd/apply/apply.go https://raw.githubusercontent.com/konveyor/crane/e3f60737303385de1235cba489f4f248fe3aa5a2/cmd/apply/apply.go
+          go build .
+
+      - name: Save artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: crane
+          path: crane/crane
+
+  build-plugins:
+    name: Build-plugins
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Create binaries
+        run: make build-plugins
+
+      - name: Save artifacts
+        uses: actions/upload-artifact@v1
+        with:
+          name: plugins
+          path: /home/runner/go/bin/
+
   build-operator:
     name: Build-operator
     runs-on: ubuntu-20.04
@@ -47,11 +91,27 @@ jobs:
 
   build-extract:
     name: Build-extract
+    needs: [build-crane, build-plugins]
     runs-on: ubuntu-20.04
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
+
+      - name: create transform-plugin dir
+        run: mkdir extract/transform-plugins
+
+      - name: Load binary artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: plugins
+          path: extract/transform-plugins/
+
+      - name: Load crane artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: crane
+          path: extract/
 
       - name: Build operator container
         run: make -C extract image
@@ -67,7 +127,7 @@ jobs:
 
   e2e:
     name: End-to-end
-    needs: [build-operator, build-extract]
+    needs: [build-operator, build-extract, build-plugins]
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -82,6 +142,7 @@ jobs:
 
       - name: Checkout source
         uses: actions/checkout@v2
+
       - name: Load operator container artifact
         uses: actions/download-artifact@v1
         with:
