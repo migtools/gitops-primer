@@ -12,7 +12,7 @@ ADD transform-plugins/ /opt/
 
 ADD committer.sh /
 
-RUN git clone https://github.com/konveyor/crane.git && cd crane && curl -o cmd/apply/apply.go https://raw.githubusercontent.com/konveyor/crane/d4d25f6ff08b4a24279d95a89cd5c2b17e75a6f0/cmd/apply/apply.go && /usr/local/bin/go/bin/go build . && mv crane /usr/local/bin/crane && rm -rf ../crane
+RUN git clone https://github.com/konveyor/crane.git && cd crane && /usr/local/bin/go/bin/go build . && mv crane /usr/local/bin/crane && rm -rf ../crane
 
 RUN chmod +x /usr/local/bin/crane && chmod +x /opt/*
 
