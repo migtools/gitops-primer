@@ -28,9 +28,8 @@ jobs:
 
       - name: Build crane
         run: |
-          git clone https://github.com/shawn-hurley/crane.git
+          git clone https://github.com/konveyor/crane.git
           cd crane
-          git checkout feature/update-runner-enhancements
           go build .
 
       - name: Save artifacts
