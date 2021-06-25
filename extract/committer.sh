@@ -69,7 +69,7 @@ users:
 
 export KUBECONFIG=/tmp/kubeconfig
 crane export --export-dir /tmp/export
-crane transform --export-dir /tmp/export --plugin-dir /opt/bin/ --transform-dir /tmp/transform
+crane transform --export-dir /tmp/export --plugin-dir /opt --transform-dir /tmp/transform
 crane apply --export-dir /tmp/export --transform-dir /tmp/transform --output-dir /tmp/outputs 
 rm -rf /repo/${NAMESPACE}
 cp -rp /tmp/outputs/resources/${NAMESPACE} /repo
