@@ -96,6 +96,17 @@ jobs:
           name: extract-image
           path: /tmp/image.tar
 
+      - name: Push to registry (latest)
+        run: |
+          docker push "${EXTRACT_IMAGE}"
+      - name: Push to registry (version tag)
+        run: |
+          [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*) ]] || exit 0
+          TAG="${BASH_REMATCH[1]}"
+          echo "Pushing to $TAG"
+          docker tag "${EXTRACT_IMAGE}" "${EXTRACT_IMAGE}:${TAG}"
+          docker push "${EXTRACT_IMAGE}:${TAG}"
+
   e2e:
     name: End-to-end
     needs: [build-operator, build-extract, build-plugins]
