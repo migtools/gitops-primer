@@ -171,8 +171,7 @@ jobs:
 
       - name: hack
         run: |
-          kubectl get nodes
-          docker ps
+          docker run -it `docker ps | grep -v Container | awk '{print $1}'` crictl images
           kubectl create ns test
           echo "${{ secrets.KEY }}" > /tmp/file 
           kubectl create secret generic secret-key --from-file=id_rsa=/tmp/file -n test
