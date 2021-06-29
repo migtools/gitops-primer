@@ -151,7 +151,8 @@ jobs:
         run: |
           docker load -i /tmp/image.tar
           docker inspect ${OPERATOR_IMAGE}
-          kind load docker-image "${OPERATOR_IMAGE}"
+          docker history ${OPERATOR_IMAGE}
+          kind load docker-image "${OPERATOR_IMAGE}:latest"
 
       - name: Load extract container artifact
         uses: actions/download-artifact@v1
@@ -163,7 +164,8 @@ jobs:
         run: |
           docker load -i /tmp/image.tar
           docker inspect ${EXTRACT_IMAGE}
-          kind load docker-image "${EXTRACT_IMAGE}"
+          docker history ${EXTRACT_IMAGE}
+          kind load docker-image "${EXTRACT_IMAGE}:latest"
 
       - name: Start operator
         run: |
