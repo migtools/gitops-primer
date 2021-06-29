@@ -37,6 +37,9 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 		whiteout = ExtractRoleBinding(*u)
 	case "Role":
 		whiteout = ExtractRole(*u)
+	case "Job":
+		whiteout = ExtractJob(*u)
+
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
@@ -59,6 +62,11 @@ func ExtractRoleBinding(u unstructured.Unstructured) bool {
 }
 
 func ExtractRole(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefault(check)
+}
+
+func ExtractJob(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
