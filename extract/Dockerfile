@@ -6,8 +6,7 @@ RUN yum update -y && \
       gcc \
       openssh-clients && \ 
     yum clean all && \
-    rm -rf /var/cache/yum && \
-    curl -sSL "https://golang.org/dl/go1.16.5.linux-amd64.tar.gz" | tar -xz -C /usr/local/bin/
+    rm -rf /var/cache/yum
 
 ADD committer.sh /
 
