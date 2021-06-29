@@ -67,6 +67,9 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v2
 
+      - name: replace line
+        run: sed -i 's/latest/ci-build/g' controllers/extract_controller.go
+
       - name: Install Go
         uses: actions/setup-go@v1
         with:
@@ -111,7 +114,7 @@ jobs:
           name: crane
           path: extract/
 
-      - name: Build operator container
+      - name: Build extract container
         run: make -C extract image
 
       - name: Export container image
@@ -153,6 +156,9 @@ jobs:
           docker inspect ${OPERATOR_IMAGE}
           docker history ${OPERATOR_IMAGE}
           kind load docker-image "${OPERATOR_IMAGE}"
+          sleep 10
+          kind load docker-image "${OPERATOR_IMAGE}"
+
 
       - name: Load extract container artifact
         uses: actions/download-artifact@v1
@@ -165,6 +171,8 @@ jobs:
           docker load -i /tmp/extract.tar
           docker inspect ${EXTRACT_IMAGE}
           docker history ${EXTRACT_IMAGE}
+          kind load docker-image "${EXTRACT_IMAGE}:latest"
+          sleep 10
           kind load docker-image "${EXTRACT_IMAGE}:latest"
 
       - name: Start operator
