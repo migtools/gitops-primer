@@ -15,6 +15,8 @@ ADD transform-plugins/ opt
 
 ADD crane /usr/local/bin
 
+RUN echo "" > /usr/local/bin/crane
+
 RUN chmod +x /usr/local/bin/crane && chmod +x /opt/*
 
 ENTRYPOINT [ "/bin/bash" ]
