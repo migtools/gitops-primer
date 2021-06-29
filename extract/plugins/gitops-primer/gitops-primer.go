@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/konveyor/crane-lib/transform"
@@ -30,6 +31,8 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 	switch u.GetKind() {
 	case "Extract":
 		whiteout = true
+	case "ServiceAccount":
+		whiteout = ExtractServiceAccount(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
@@ -39,4 +42,18 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 		IsWhiteOut: whiteout,
 		Patches:    patch,
 	}, nil
+}
+
+func ExtractServiceAccount(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefault(check)
+}
+
+func isDefault(name string) bool {
+	for _, d := range extractName {
+		if strings.Contains(name, d) {
+			return true
+		}
+	}
+	return false
 }
