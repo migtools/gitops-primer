@@ -67,9 +67,6 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v2
 
-      - name: replace line
-        run: sed -i 's/latest/ci-build/g' controllers/extract_controller.go
-
       - name: Install Go
         uses: actions/setup-go@v1
         with:
