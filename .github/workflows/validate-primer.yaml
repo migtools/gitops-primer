@@ -79,13 +79,13 @@ jobs:
         run: make docker-build IMG=${OPERATOR_IMAGE}
 
       - name: Export container image
-        run: docker save -o /tmp/image.tar ${OPERATOR_IMAGE}
+        run: docker save -o /tmp/operator.tar ${OPERATOR_IMAGE}
 
       - name: Save container as artifact
         uses: actions/upload-artifact@v1
         with:
           name: primer-operator
-          path: /tmp/image.tar
+          path: /tmp/operator.tar
 
   build-extract:
     name: Build-extract
@@ -115,13 +115,13 @@ jobs:
         run: make -C extract image
 
       - name: Export container image
-        run: docker save -o /tmp/image.tar ${EXTRACT_IMAGE}
+        run: docker save -o /tmp/extract.tar ${EXTRACT_IMAGE}
 
       - name: Save container as artifact
         uses: actions/upload-artifact@v1
         with:
           name: extract-image
-          path: /tmp/image.tar
+          path: /tmp/extract.tar
 
   e2e:
     name: End-to-end
@@ -149,10 +149,10 @@ jobs:
 
       - name: Import container image into cluster
         run: |
-          docker load -i /tmp/image.tar
+          docker load -i /tmp/operator.tar
           docker inspect ${OPERATOR_IMAGE}
           docker history ${OPERATOR_IMAGE}
-          kind load docker-image "${OPERATOR_IMAGE}:latest"
+          kind load docker-image "${OPERATOR_IMAGE}"
 
       - name: Load extract container artifact
         uses: actions/download-artifact@v1
@@ -162,7 +162,7 @@ jobs:
 
       - name: Import container image into cluster
         run: |
-          docker load -i /tmp/image.tar
+          docker load -i /tmp/extract.tar
           docker inspect ${EXTRACT_IMAGE}
           docker history ${EXTRACT_IMAGE}
           kind load docker-image "${EXTRACT_IMAGE}:latest"
@@ -206,7 +206,7 @@ jobs:
 
       - name: Import container image
         run: |
-          docker load -i /tmp/image.tar
+          docker load -i /tmp/operator.tar
           docker inspect ${OPERATOR_IMAGE}
       - name: Login to registry
         # If the registry server is specified in the image name, we use that.
@@ -249,7 +249,7 @@ jobs:
 
       - name: Import container image
         run: |
-          docker load -i /tmp/image.tar
+          docker load -i /tmp/extract.tar
           docker inspect ${EXTRACT_IMAGE}
       - name: Login to registry
         # If the registry server is specified in the image name, we use that.
