@@ -33,6 +33,10 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 		whiteout = true
 	case "ServiceAccount":
 		whiteout = ExtractServiceAccount(*u)
+	case "RoleBinding":
+		whiteout = ExtractRoleBinding(*u)
+	case "Role":
+		whiteout = ExtractRole(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
@@ -45,6 +49,16 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 }
 
 func ExtractServiceAccount(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefault(check)
+}
+
+func ExtractRoleBinding(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefault(check)
+}
+
+func ExtractRole(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
