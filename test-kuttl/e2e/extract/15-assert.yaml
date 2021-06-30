@@ -2,6 +2,7 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
 timeout: 300
+ignoreFailure: true
 ---
 apiVersion: primer.gitops.io/v1alpha1
 kind: Extract
