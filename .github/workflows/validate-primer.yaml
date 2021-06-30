@@ -123,19 +123,6 @@ jobs:
           name: extract-image
           path: /tmp/extract.tar
 
-      - name: Login to registry
-        # If the registry server is specified in the image name, we use that.
-        # If the server isn't in the image name, default to docker.io
-        run: |
-          [[ "${EXTRACT_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
-          echo "Attempting docker login to: ${REGISTRY}"
-          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
-      - name: Push to registry (latest)
-        run: |
-          echo "Pushing to ci-build"
-          docker tag "${EXTRACT_IMAGE}" "${EXTRACT_IMAGE}:ci-build"
-          docker push "${EXTRACT_IMAGE}:ci-build"
-
   e2e:
     name: End-to-end
     needs: [build-operator, build-extract, build-plugins]
