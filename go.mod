@@ -3,7 +3,7 @@ module github.com/cooktheryan/gitops-primer
 go 1.16
 
 require (
-	github.com/evanphx/json-patch v4.11.0+incompatible // indirect
+	github.com/evanphx/json-patch v4.11.0+incompatible
 	github.com/konveyor/crane-lib v0.0.0-20210630183152-1bf12d0d8579
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
