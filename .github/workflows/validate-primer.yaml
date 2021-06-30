@@ -185,6 +185,10 @@ jobs:
       - name: Run e2e test
         run: |
           make test-e2e
+      
+      - name: can i get status
+        run: |
+          oc logs -n test `oc get po -n test | grep primer | awk '{print $1}' | head -n1`
 
   e2e-success:
     name: Successful e2e tests
