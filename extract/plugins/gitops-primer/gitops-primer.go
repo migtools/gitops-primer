@@ -39,8 +39,6 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 		whiteout = ExtractRole(*u)
 	case "Job":
 		whiteout = ExtractJob(*u)
-	case "Secret":
-		whiteout = ExtractSecret(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
@@ -68,11 +66,6 @@ func ExtractRole(u unstructured.Unstructured) bool {
 }
 
 func ExtractJob(u unstructured.Unstructured) bool {
-	check := u.GetName()
-	return isDefault(check)
-}
-
-func ExtractSecret(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
