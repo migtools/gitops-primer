@@ -186,6 +186,10 @@ jobs:
         run: |
           make test-e2e
 
+      - name: print logs
+        run:
+          kubectl logs -n test `kubectl get po -n test | grep primer | awk '{print $1}' | head -n1`
+
   e2e-success:
     name: Successful e2e tests
     needs: [build-operator, e2e]
