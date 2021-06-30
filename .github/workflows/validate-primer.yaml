@@ -126,7 +126,7 @@ jobs:
   e2e:
     name: End-to-end
     needs: [build-operator, build-extract, build-plugins]
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -136,7 +136,7 @@ jobs:
       KUBERNETES_VERSION: ${{ matrix.KUBERNETES_VERSIONS }}
     steps:
       - name: Create k8s Kind Cluster
-        uses: engineerd/setup-kind@v0.5.0
+        uses: helm/kind-action@v1.2.0
 
       - name: Checkout source
         uses: actions/checkout@v2
@@ -182,9 +182,9 @@ jobs:
           echo "${{ secrets.KEY }}" > /tmp/file 
           kubectl create secret generic secret-key --from-file=id_rsa=/tmp/file -n test
 
-#      - name: Run e2e test
-#        run: |
-#          make test-e2e
+      - name: Run e2e test
+        run: |
+          make test-e2e
 
   e2e-success:
     name: Successful e2e tests
