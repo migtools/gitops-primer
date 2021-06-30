@@ -2,5 +2,5 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestStep
 commands:
-  - timeout: 90
+  - timeout: 900
     command: ./25-remove-objects.sh
