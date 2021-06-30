@@ -187,7 +187,8 @@ jobs:
           make test-e2e
 
       - name: print logs
-        run:
+        run: |
+          sleep 1m
           kubectl logs -n test `kubectl get po -n test | grep primer | awk '{print $1}' | head -n1`
 
   e2e-success:
