@@ -7,3 +7,5 @@ kind: Extract
 metadata:
   name: ci
   namespace: test
+status:
+  completed: true
