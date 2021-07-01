@@ -14,7 +14,7 @@ ADD transform-plugins/ opt
 
 ADD crane /usr/local/bin
 
-RUN chmod +x /usr/local/bin/crane && chmod +x /opt/* && chmod g+rw /opt/app-root/src
+RUN chmod +x /usr/local/bin/crane && chmod +x /opt/* && mkdir -p  /opt/app-root/src && chmod g+rw /opt/app-root/src
 
 USER 1001
 
