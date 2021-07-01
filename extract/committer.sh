@@ -2,17 +2,17 @@
 set -e
 
 # Setup SSH
-mkdir -p ~/.ssh/controlmasters
-chmod 711 ~/.ssh
-ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
+mkdir -p /opt/app-root/src/.ssh/controlmasters
+chmod 711 /opt/app-root/src/.ssh
+ssh-keyscan -t rsa github.com >> /opt/app-root/src/.ssh/known_hosts
 
-cat - <<SSHCONFIG > ~/.ssh/config
+cat - <<SSHCONFIG > /opt/app-root/src/.ssh/config
 Host *
   # Wait max 30s to establish connection
   ConnectTimeout 30
   # Control persist to speed 2nd ssh connection
   ControlMaster auto
-  ControlPath ~/.ssh/controlmasters/%C
+  ControlPath /opt/app-root/src/.ssh/controlmasters/%C
   ControlPersist 5
   # Disables warning when IP is added to known_hosts
   CheckHostIP no
