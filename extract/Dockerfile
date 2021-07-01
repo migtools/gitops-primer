@@ -16,4 +16,8 @@ ADD crane /usr/local/bin
 
 RUN chmod +x /usr/local/bin/crane && chmod +x /opt/*
 
+USER 1001
+
+WORKDIR /opt/app-root/src
+
 ENTRYPOINT [ "/bin/bash" ]
