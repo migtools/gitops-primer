@@ -34,8 +34,7 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 
 func RemoveFields(u unstructured.Unstructured) (jsonpatch.Patch, error) {
 	patchJSON := fmt.Sprintf(`[
-{ "op": "remove", "path": "/metadata/managedFields},
-{ "op": "remove", "path": "/metadata/creationTimestamp}
+{ "op": "remove", "path": "/metadata/managedFields}
 ]`)
 
 	patch, err := jsonpatch.DecodePatch([]byte(patchJSON))
