@@ -10,7 +10,7 @@ RUN yum update -y && \
 
 ADD committer.sh /
 
-ADD transform-plugins opt/
+ADD transform-plugins opt/transform-plugins
 
 ADD crane /usr/local/bin
 
