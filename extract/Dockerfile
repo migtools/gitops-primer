@@ -18,6 +18,6 @@ RUN mkdir -p /usr/local/app-root/src && useradd -u 1001 -r -g 0 -d /usr/local/ap
 
 USER 1001
 
-ENV home /usr/local/app-root/src
+ENV HOME /usr/local/app-root/src
 
 ENTRYPOINT [ "/bin/bash" ]
