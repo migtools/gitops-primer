@@ -217,7 +217,7 @@ func updateErrCondition(instance *primerv1alpha1.Extract, err error) {
 // jobForExtract returns a instance Job object
 // TODO: fix OpenShift requires privileged pod and admin to run privileged pod
 func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
-	mode := int32(0600)
+	mode := int32(256)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-extract-" + m.Name,
@@ -232,7 +232,7 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
 						Image:           "quay.io/octo-emerging/gitops-primer-extract:latest",
-						Command: []string{"/bin/sh", "-c", "/committer.sh"},
+						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "REPO", Value: m.Spec.Repo},
 							{Name: "BRANCH", Value: m.Spec.Branch},
