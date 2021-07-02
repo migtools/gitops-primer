@@ -11,6 +11,8 @@ import (
 )
 
 var defaultSecretName = []string{"builder-dockercfg-", "builder-token", "default-dockercfg-", "default-token", "deployer-dockercfg-", "deployer-token"}
+var defaultRoleBindingName = []string{"system:"}
+var defaultConfigMapName = []string{"kube-root-ca.crt"}
 
 func main() {
 	// TODO: add plumbing for logger in the cli-library and instantiate here
@@ -20,7 +22,7 @@ func main() {
 		cli.WriterErrorAndExit(fmt.Errorf("error getting unstructured object: %#v", err))
 	}
 
-	cli.RunAndExit(cli.NewCustomPlugin("DefaultSecrets", Run), u)
+	cli.RunAndExit(cli.NewCustomPlugin("DefaultObjectWhiteout", Run), u)
 }
 
 func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
@@ -30,7 +32,11 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 	var whiteout bool
 	switch u.GetKind() {
 	case "Secret":
-		whiteout = ExtractSecret(*u)
+		whiteout = DefaultSecret(*u)
+	case "Rolebinding":
+		whiteout = DefaultRoleBinding(*u)
+	case "ConfigMap":
+		whiteout = DefaultConfigMap(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
@@ -42,13 +48,41 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 	}, nil
 }
 
-func ExtractSecret(u unstructured.Unstructured) bool {
+func DefaultSecret(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
 
 func isDefault(name string) bool {
 	for _, d := range defaultSecretName {
+		if strings.Contains(name, d) {
+			return true
+		}
+	}
+	return false
+}
+
+func DefaultRoleBinding(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefaultBinding(check)
+}
+
+func isDefaultBinding(name string) bool {
+	for _, d := range defaultRoleBindingName {
+		if strings.Contains(name, d) {
+			return true
+		}
+	}
+	return false
+}
+
+func DefaultConfigMap(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefaultConfigmap(check)
+}
+
+func isDefaultConfigmap(name string) bool {
+	for _, d := range defaultConfigMapName {
 		if strings.Contains(name, d) {
 			return true
 		}
