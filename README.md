@@ -31,4 +31,3 @@ oc create -f examples/extract.yaml
 ```
 
 After the job completes, items will exist within your git repository.
-
