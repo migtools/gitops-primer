@@ -10,15 +10,13 @@ RUN yum update -y && \
 
 ADD committer.sh /
 
-ADD transform-plugins/ opt 
+ADD transform-plugins opt/
 
 ADD crane /usr/local/bin
 
 RUN mkdir -p /opt/app-root/src && chmod +x /usr/local/bin/crane && chmod +x /opt/* && chmod g+rw /opt/app-root/src
 
 USER 1001
-
-WORKDIR /opt/app-root/src
 
 ENV HOME /opt/app-root/src
 
