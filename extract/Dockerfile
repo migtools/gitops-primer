@@ -14,7 +14,7 @@ ADD transform-plugins opt/transform-plugins
 
 ADD crane /usr/local/bin
 
-RUN mkdir -p /opt/app-root/src && chmod +x /usr/local/bin/crane && chmod +x /opt/* && chmod g+rw /opt/app-root/src
+RUN mkdir -p /opt/app-root/src && useradd -u 1001 -r -g 0 -d /opt/app-root/src -s /sbin/nologin -c "Default Application User" default && chmod +x /usr/local/bin/crane && chmod +x /opt/* && chmod g+rw /opt/app-root/src
 
 USER 1001
 
