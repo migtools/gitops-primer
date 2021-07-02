@@ -232,7 +232,7 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
 						Image:           "quay.io/octo-emerging/gitops-primer-extract:latest",
-						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
+						Command: []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "REPO", Value: m.Spec.Repo},
 							{Name: "BRANCH", Value: m.Spec.Branch},

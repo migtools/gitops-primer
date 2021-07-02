@@ -20,4 +20,8 @@ USER 1001
 
 ENV HOME /opt/app-root/src
 
+USER 1001
+
+WORKDIR /opt/app-root/src
+
 ENTRYPOINT [ "/bin/bash" ]
