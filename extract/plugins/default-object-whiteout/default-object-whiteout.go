@@ -34,7 +34,7 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 	switch u.GetKind() {
 	case "Secret":
 		whiteout = DefaultSecret(*u)
-	case "Rolebinding":
+	case "RoleBinding":
 		whiteout = DefaultRoleBinding(*u)
 	case "ConfigMap":
 		whiteout = DefaultConfigMap(*u)
