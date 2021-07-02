@@ -4,6 +4,8 @@ set -e
 # Setup SSH
 mkdir -p ~/.ssh/controlmasters
 chmod 711 ~/.ssh
+cp /keys/id_rsa ~/.ssh/id_rsa
+chmod 0600 ~/.ssh/id_rsa
 ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 
 cat - <<SSHCONFIG > ~/.ssh/config
