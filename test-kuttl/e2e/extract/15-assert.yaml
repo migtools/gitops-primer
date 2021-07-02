@@ -2,10 +2,11 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
 ---
-apiVersion: primer.gitops.io/v1alpha1
-kind: Extract
+apiVersion: v1
+kind: Pod
 metadata:
-  name: ci
   namespace: test
+  labels:
+      job-name: primer-extract-ci
 status:
-  completed: true
+  phase: Running
