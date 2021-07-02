@@ -1,5 +1,12 @@
 ---
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
-collectors:
-  - selector: job-name=primer-extract-ci 
+timeout: 100
+---
+apiVersion: primer.gitops.io/v1alpha1
+kind: Extract
+metadata:
+  name: ci
+  namespace: test
+status:
+  completed: true

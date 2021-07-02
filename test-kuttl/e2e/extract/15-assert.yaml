@@ -2,10 +2,11 @@
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
 ---
-apiVersion: primer.gitops.io/v1alpha1
-kind: Extract
+apiVersion: apps/v1
+kind: Deployment 
 metadata:
-  name: ci
-  namespace: test
+  name: gitops-primer-controller-manager
+  namespace: gitops-primer-system
 status:
-  completed: true
+  availableReplicas: 1
+  readyReplicas: 1
