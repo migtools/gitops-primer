@@ -13,6 +13,7 @@ import (
 var defaultSecretName = []string{"builder-dockercfg-", "builder-token", "default-dockercfg-", "default-token", "deployer-dockercfg-", "deployer-token"}
 var defaultRoleBindingName = []string{"system:"}
 var defaultConfigMapName = []string{"kube-root-ca.crt"}
+var defaultServiceAccountName = []string{"builder", "deployer", "default"}
 
 func main() {
 	// TODO: add plumbing for logger in the cli-library and instantiate here
@@ -33,10 +34,12 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 	switch u.GetKind() {
 	case "Secret":
 		whiteout = DefaultSecret(*u)
-	case "Rolebinding":
+	case "RoleBinding":
 		whiteout = DefaultRoleBinding(*u)
 	case "ConfigMap":
 		whiteout = DefaultConfigMap(*u)
+	case "ServiceAccount":
+		whiteout = DefaultServiceAccount(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
@@ -50,10 +53,10 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 
 func DefaultSecret(u unstructured.Unstructured) bool {
 	check := u.GetName()
-	return isDefault(check)
+	return isDefaultSecret(check)
 }
 
-func isDefault(name string) bool {
+func isDefaultSecret(name string) bool {
 	for _, d := range defaultSecretName {
 		if strings.Contains(name, d) {
 			return true
@@ -83,6 +86,20 @@ func DefaultConfigMap(u unstructured.Unstructured) bool {
 
 func isDefaultConfigmap(name string) bool {
 	for _, d := range defaultConfigMapName {
+		if strings.Contains(name, d) {
+			return true
+		}
+	}
+	return false
+}
+
+func DefaultServiceAccount(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefaultServiceAccount(check)
+}
+
+func isDefaultServiceAccount(name string) bool {
+	for _, d := range defaultServiceAccountName {
 		if strings.Contains(name, d) {
 			return true
 		}
