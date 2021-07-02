@@ -159,8 +159,6 @@ jobs:
           docker inspect ${OPERATOR_IMAGE}
           docker history ${OPERATOR_IMAGE}
           kind load docker-image "${OPERATOR_IMAGE}"
-          sleep 10
-          kind load docker-image "${OPERATOR_IMAGE}"
 
 
       - name: Load extract container artifact
@@ -174,8 +172,6 @@ jobs:
           docker load -i /tmp/extract.tar
           docker inspect ${EXTRACT_IMAGE}
           docker history ${EXTRACT_IMAGE}
-          kind load docker-image "${EXTRACT_IMAGE}:latest"
-          sleep 10
           kind load docker-image "${EXTRACT_IMAGE}:latest"
 
       - name: Start operator
