@@ -9,7 +9,7 @@ metadata:
   name: ci
 spec:
   repo: git@github.com:cooktheryan/primer-poc.git
-  branch: ci
+  branch: ci2
   email: nobody@everybody.com
   secret: secret-key
 EOF
