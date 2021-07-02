@@ -31,11 +31,11 @@ SSHCONFIG
 git clone ${REPO} /repo -q
 cd /repo
 git fetch -q 
-exists=$(git ls-remote --heads origin ${BRANCH})
+existed_in_remote=$(git ls-remote --heads origin ${BRANCH})
 if [[ -z ${existed_in_remote} ]]; then
-	git checkout ${BRANCH} -q
-else
-	git checkout -b ${BRANCH} -q
+   git checkout -b ${BRANCH}
+else  
+   git checkout ${BRANCH}
 fi
 git config --global user.email "${EMAIL}"
 
