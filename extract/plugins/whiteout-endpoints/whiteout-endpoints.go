@@ -25,7 +25,7 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 	if u.GetKind() == "EndpointSlice" {
 		whiteout = true
 	}
-	if u.GetKind() == "Endpoint" {
+	if u.GetKind() == "Endpoints" {
 		whiteout = true
 	}
 	return transform.PluginResponse{
