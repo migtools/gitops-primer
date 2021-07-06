@@ -36,8 +36,6 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 		patch, err = UpdateRoute(*u)
 	case "Service":
 		patch, err = UpdateService(*u)
-	case "Build":
-		patch, err = UpdateBuild(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
@@ -113,20 +111,6 @@ func UpdateService(u unstructured.Unstructured) (jsonpatch.Patch, error) {
 	patchJSON := fmt.Sprintf(`[
 { "op": "remove", "path": "/spec/clusterIPs"}, 
 { "op": "remove", "path": "/spec/clusterIP"}
-]`)
-
-	patch, err := jsonpatch.DecodePatch([]byte(patchJSON))
-	if err != nil {
-		return nil, err
-	}
-	return patch, nil
-}
-
-func UpdateBuild(u unstructured.Unstructured) (jsonpatch.Patch, error) {
-	patchJSON := fmt.Sprintf(`[
-{ "op": "remove", "path": "/manifests/ownerReferences"}, 
-{ "op": "remove", "path": "/spec/output/pushSecret"}, 
-{ "op": "remove", "path": "/spec/strategy/sourceStrategy/pullSecret"} 
 ]`)
 
 	patch, err := jsonpatch.DecodePatch([]byte(patchJSON))
