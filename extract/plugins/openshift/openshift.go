@@ -109,6 +109,7 @@ func getPullSecrets(u unstructured.Unstructured) []v1.LocalObjectReference {
 
 func UpdateService(u unstructured.Unstructured) (jsonpatch.Patch, error) {
 	patchJSON := fmt.Sprintf(`[
+{ "op": "remove", "path": "/spec/clusterIPs"}, 
 { "op": "remove", "path": "/spec/clusterIP"}
 ]`)
 
