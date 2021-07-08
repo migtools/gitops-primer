@@ -73,3 +73,5 @@ git add *
 git commit -am 'bot commit'
 git push origin ${BRANCH} -q
 echo "Merge to ${BRANCH} completed successfully"
+
+zip export.zip ${NAMESPACE}
