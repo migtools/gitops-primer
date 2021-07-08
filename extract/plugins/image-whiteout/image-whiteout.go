@@ -17,14 +17,17 @@ func main() {
 		cli.WriterErrorAndExit(fmt.Errorf("error getting unstructured object: %#v", err))
 	}
 
-	cli.RunAndExit(cli.NewCustomPlugin("BuildPlugin", Run), u)
+	cli.RunAndExit(cli.NewCustomPlugin("ImagePlugin", Run), u)
 }
 
 func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 	// plugin writers need to write custome code here.
 	var patch jsonpatch.Patch
 	var whiteout bool
-	if u.GetKind() == "Build" {
+	if u.GetKind() == "ImageStreamTag" {
+		whiteout = true
+	}
+	if u.GetKind() == "ImageTag" {
 		whiteout = true
 	}
 	return transform.PluginResponse{
