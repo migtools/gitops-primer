@@ -4,6 +4,7 @@ RUN yum update -y && \
     yum install -y \
       git \
       gcc \
+      zip \
       openssh-clients && \ 
     yum clean all && \
     rm -rf /var/cache/yum
