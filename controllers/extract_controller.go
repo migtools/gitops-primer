@@ -314,7 +314,6 @@ func (r *ExtractReconciler) pvcGenerate(m *primerv1alpha1.Extract) *corev1.Persi
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			VolumeName:  "primer-extract-" + m.Name,
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceStorage): resource.MustParse("1Gi"),
