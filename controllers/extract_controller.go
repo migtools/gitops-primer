@@ -271,7 +271,9 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 					}},
 					Volumes: []corev1.Volume{
 						{Name: "repo", VolumeSource: corev1.VolumeSource{
-							EmptyDir: &corev1.EmptyDirVolumeSource{},
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "primer-extract-" + m.Name,
+							},
 						},
 						},
 						{Name: "sshkeys", VolumeSource: corev1.VolumeSource{
@@ -310,6 +312,8 @@ func (r *ExtractReconciler) pvcGenerate(m *primerv1alpha1.Extract) *corev1.Persi
 			Namespace: m.Namespace,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
+			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+			VolumeName:  "primer-extract-" + m.Name,
 			Resources: corev1.ResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceStorage): resource.MustParse("1Gi"),
@@ -373,5 +377,6 @@ func (r *ExtractReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&corev1.ServiceAccount{}).
+		Owns(&corev1.PersistentVolumeClaim{}).
 		Complete(r)
 }
