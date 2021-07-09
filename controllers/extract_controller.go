@@ -24,7 +24,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -174,30 +173,6 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, err
 	}
 
-	// Check if the Service Account already exists, if not create a new one
-	foundVolume := &corev1.PersistentVolumeClaim{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundVolume); err != nil {
-		if instance.Status.Completed {
-			return ctrl.Result{}, nil
-		}
-		if errors.IsNotFound(err) {
-			// Define a new PVC
-			persistentVC := r.pvcGenerate(instance)
-			log.Info("Creating a new Service Account", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
-			if err := r.Create(ctx, persistentVC); err != nil {
-				log.Error(err, "Failed to create a PVC", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
-
-				updateErrCondition(instance, err)
-				return ctrl.Result{}, err
-			}
-			// Persistent Volume created successfully - return and requeue
-			return ctrl.Result{Requeue: true}, nil
-		}
-		log.Error(err, "Failed to get PVC")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
-	}
-
 	if instance.Status.Conditions == nil {
 		instance.Status.Conditions = status.Conditions{}
 	}
@@ -271,9 +246,7 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 					}},
 					Volumes: []corev1.Volume{
 						{Name: "repo", VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: "primer-extract-" + m.Name,
-							},
+							EmptyDir: &corev1.EmptyDirVolumeSource{},
 						},
 						},
 						{Name: "sshkeys", VolumeSource: corev1.VolumeSource{
@@ -302,28 +275,6 @@ func (r *ExtractReconciler) saGenerate(m *primerv1alpha1.Extract) *corev1.Servic
 	// Service reconcile finished
 	ctrl.SetControllerReference(m, serviceAcct, r.Scheme)
 	return serviceAcct
-}
-
-func (r *ExtractReconciler) pvcGenerate(m *primerv1alpha1.Extract) *corev1.PersistentVolumeClaim {
-	// Define a new PVC object
-	persistentVC := &corev1.PersistentVolumeClaim{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-extract-" + m.Name,
-			Namespace: m.Namespace,
-		},
-		Spec: corev1.PersistentVolumeClaimSpec{
-			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-			VolumeName:  "primer-extract-" + m.Name,
-			Resources: corev1.ResourceRequirements{
-				Requests: corev1.ResourceList{
-					corev1.ResourceName(corev1.ResourceStorage): resource.MustParse("1Gi"),
-				},
-			},
-		},
-	}
-	// Service reconcile finished
-	ctrl.SetControllerReference(m, persistentVC, r.Scheme)
-	return persistentVC
 }
 
 func (r *ExtractReconciler) roleGenerate(m *primerv1alpha1.Extract) *rbacv1.Role {
@@ -377,6 +328,5 @@ func (r *ExtractReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&corev1.ServiceAccount{}).
-		Owns(&corev1.PersistentVolumeClaim{}).
 		Complete(r)
 }
