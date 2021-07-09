@@ -12,4 +12,5 @@ spec:
   branch: ci
   email: nobody@everybody.com
   secret: secret-key
+  method: git
 EOF

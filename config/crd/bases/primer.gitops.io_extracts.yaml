@@ -39,15 +39,14 @@ spec:
                 type: string
               email:
                 type: string
+              method:
+                type: string
               repo:
                 type: string
               secret:
                 type: string
             required:
-            - branch
-            - email
-            - repo
-            - secret
+            - method
             type: object
           status:
             description: ExtractStatus defines the observed state of Extract
