@@ -33,10 +33,11 @@ const (
 )
 
 type ExtractSpec struct {
-	Branch string `json:"branch"`
-	Repo   string `json:"repo"`
-	Email  string `json:"email"`
-	Secret string `json:"secret"`
+	Method string `json:"method"`
+	Branch string `json:"branch,omitempty"`
+	Repo   string `json:"repo,omitempty"`
+	Email  string `json:"email,omitempty"`
+	Secret string `json:"secret,omitempty"`
 }
 
 // ExtractStatus defines the observed state of Extract

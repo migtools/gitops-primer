@@ -89,16 +89,29 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			return ctrl.Result{}, nil
 		}
 		if errors.IsNotFound(err) {
-			// Define a new job
-			job := r.jobForExtract(instance)
-			log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-			if err = r.Create(ctx, job); err != nil {
-				log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-				updateErrCondition(instance, err)
-				return ctrl.Result{}, err
+			if instance.Spec.Method == "git" {
+				// Define a new job
+				job := r.jobGitForExtract(instance)
+				log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+				if err = r.Create(ctx, job); err != nil {
+					log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+					updateErrCondition(instance, err)
+					return ctrl.Result{}, err
+				}
+				// Job created successfully - return and requeue
+				return ctrl.Result{Requeue: true}, nil
+			} else if instance.Spec.Method == "download" {
+				// Define a new job
+				job := r.jobDownloadForExtract(instance)
+				log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+				if err = r.Create(ctx, job); err != nil {
+					log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+					updateErrCondition(instance, err)
+					return ctrl.Result{}, err
+				}
+				// Job created successfully - return and requeue
+				return ctrl.Result{Requeue: true}, nil
 			}
-			// Job created successfully - return and requeue
-			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get Job")
 		updateErrCondition(instance, err)
@@ -240,9 +253,8 @@ func updateErrCondition(instance *primerv1alpha1.Extract, err error) {
 		})
 }
 
-// jobForExtract returns a instance Job object
-// TODO: fix OpenShift requires privileged pod and admin to run privileged pod
-func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
+// jobGitForExtract returns a instance Job object
+func (r *ExtractReconciler) jobGitForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
 	mode := int32(0644)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -259,19 +271,14 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 						ImagePullPolicy: "Always",
 						Image:           "quay.io/octo-emerging/gitops-primer-extract:latest",
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
-						Env: []corev1.EnvVar{
-							{Name: "REPO", Value: m.Spec.Repo},
-							{Name: "BRANCH", Value: m.Spec.Branch},
-							{Name: "EMAIL", Value: m.Spec.Email},
-							{Name: "NAMESPACE", Value: m.Namespace},
-						},
+						Env:             []corev1.EnvVar{},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "sshkeys", MountPath: "/keys"},
-							{Name: "repo", MountPath: "/repo"},
+							{Name: "output", MountPath: "/output"},
 						},
 					}},
 					Volumes: []corev1.Volume{
-						{Name: "repo", VolumeSource: corev1.VolumeSource{
+						{Name: "output", VolumeSource: corev1.VolumeSource{
 							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 								ClaimName: "primer-extract-" + m.Name,
 							},
@@ -282,6 +289,44 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 								SecretName:  m.Spec.Secret,
 								DefaultMode: &mode,
 							}},
+						},
+					},
+				},
+			},
+		},
+	}
+	ctrl.SetControllerReference(m, job, r.Scheme)
+	return job
+}
+
+// jobGitForExtract returns a instance Job object
+func (r *ExtractReconciler) jobDownloadForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
+	job := &batchv1.Job{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "primer-extract-" + m.Name,
+			Namespace: m.Namespace,
+		},
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					RestartPolicy:      "Never",
+					ServiceAccountName: "primer-extract-" + m.Name,
+					Containers: []corev1.Container{{
+						Name:            m.Name,
+						ImagePullPolicy: "Always",
+						Image:           "quay.io/octo-emerging/gitops-primer-extract:latest",
+						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
+						Env:             []corev1.EnvVar{},
+						VolumeMounts: []corev1.VolumeMount{
+							{Name: "output", MountPath: "/output"},
+						},
+					}},
+					Volumes: []corev1.Volume{
+						{Name: "output", VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "primer-extract-" + m.Name,
+							},
+						},
 						},
 					},
 				},
