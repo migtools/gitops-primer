@@ -256,7 +256,7 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 					ServiceAccountName: "primer-extract-" + m.Name,
 					Containers: []corev1.Container{{
 						Name:            m.Name,
-						ImagePullPolicy: "Always",
+						ImagePullPolicy: "IfNotPresent",
 						Image:           "quay.io/octo-emerging/gitops-primer-extract:latest",
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
