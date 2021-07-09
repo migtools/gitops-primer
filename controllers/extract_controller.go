@@ -244,6 +244,7 @@ func updateErrCondition(instance *primerv1alpha1.Extract, err error) {
 // TODO: fix OpenShift requires privileged pod and admin to run privileged pod
 func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
 	mode := int32(0644)
+	repoPerms := int32(0776)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-extract-" + m.Name,
@@ -273,7 +274,8 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 					Volumes: []corev1.Volume{
 						{Name: "repo", VolumeSource: corev1.VolumeSource{
 							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: "primer-extract-" + m.Name,
+								ClaimName:   "primer-extract-" + m.Name,
+								DefaultMode: &repoPerms,
 							},
 						},
 						},
