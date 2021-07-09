@@ -82,5 +82,5 @@ if [ ${METHOD} == "git" ]; then
   git push origin ${BRANCH} -q
   echo "Merge to ${BRANCH} completed successfully"
 else
-  zip /output/${NAMESPACE}.zip ${NAMESPACE}
+  zip /output/export.zip ${NAMESPACE}
 fi
