@@ -27,6 +27,23 @@ Host *
   TCPKeepAlive no
 SSHCONFIG
 
+# Setup the repository
+git clone ${REPO} /repo -q
+cd /repo
+git fetch -q 
+existed_in_remote=$(git ls-remote --heads origin ${BRANCH})
+if [[ -z ${existed_in_remote} ]]; then
+   git checkout -b ${BRANCH}
+else  
+   git checkout ${BRANCH}
+fi
+git config --global user.email "${EMAIL}"
+
+# Identify all objects
+EXCLUSIONS="pipelinerun|taskrun|images|image.openshift.io|events|machineautoscalers.autoscaling.openshift.io|credentialsrequests.cloudcredential.openshift.io|podnetworkconnectivitychecks.controlplane.operator.openshift.io|leases.coordination.k8s.io|machinehealthchecks.machine.openshift.io|machines.machine.openshift.io|machinesets.machine.openshift.io|baremetalhosts.metal3.io|pods.metrics.k8s.io|alertmanagerconfigs.monitoring.coreos.com|alertmanagers.monitoring.coreos.com|podmonitors.monitoring.coreos.com|volumesnapshots.snapshot.storage.k8s.io|profiles.tuned.openshift.io|tuneds.tuned.openshift.io|endpointslice.discovery.k8s.io|ippools.whereabouts.cni.cncf.io|overlappingrangeipreservations.whereabouts.cni.cncf.io|packagemanifests.packages.operators.coreos.com|endpointslice.discovery.k8s.io|endpoints|pods"
+
+IGNORES="argocd|primer|secret-key|kube-root-ca.crt|image-puller|kubernetes.io/service-account-token|builder|default|default-token|default-dockercfg|deployer|openshift-gitops-operator|redhat-openshift-pipelines-operator|edit|admin|pipeline-dockercfg"
+
 
 TOKEN=`cat /var/run/secrets/kubernetes.io/serviceaccount/token | base64 -w0`
 CA=`cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt |base64 -w0`
@@ -51,18 +68,6 @@ users:
   user:
     token: ${TOKEN}
 " > /tmp/kubeconfig
-
-# Setup the repository
-git clone ${REPO} /repo -q
-cd /repo
-git fetch -q 
-existed_in_remote=$(git ls-remote --heads origin ${BRANCH})
-if [[ -z ${existed_in_remote} ]]; then
-   git checkout -b ${BRANCH}
-else  
-   git checkout ${BRANCH}
-fi
-git config --global user.email "${EMAIL}"
 
 export KUBECONFIG=/tmp/kubeconfig
 crane export --export-dir /tmp/export
