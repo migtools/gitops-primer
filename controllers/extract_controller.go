@@ -244,7 +244,7 @@ func updateErrCondition(instance *primerv1alpha1.Extract, err error) {
 // TODO: fix OpenShift requires privileged pod and admin to run privileged pod
 func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
 	mode := int32(0644)
-	repoPerms := int32(0776)
+	fsGroupId := int64(6554)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-extract-" + m.Name,
@@ -255,11 +255,15 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 				Spec: corev1.PodSpec{
 					RestartPolicy:      "Never",
 					ServiceAccountName: "primer-extract-" + m.Name,
+					SecurityContext: &corev1.PodSecurityContext{
+						FSGroup: &fsGroupId,
+					},
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
 						Image:           "quay.io/octo-emerging/gitops-primer-extract:latest",
-						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
+
+						Command: []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "REPO", Value: m.Spec.Repo},
 							{Name: "BRANCH", Value: m.Spec.Branch},
@@ -274,8 +278,7 @@ func (r *ExtractReconciler) jobForExtract(m *primerv1alpha1.Extract) *batchv1.Jo
 					Volumes: []corev1.Volume{
 						{Name: "repo", VolumeSource: corev1.VolumeSource{
 							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName:   "primer-extract-" + m.Name,
-								DefaultMode: &repoPerms,
+								ClaimName: "primer-extract-" + m.Name,
 							},
 						},
 						},
