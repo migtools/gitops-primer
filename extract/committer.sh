@@ -65,6 +65,11 @@ users:
     token: ${TOKEN}
 " > /tmp/kubeconfig
 
+if [ ${METHOD} == "download" ]; then
+  mkdir /output/repo
+  cd /output/repo
+fi
+
 export KUBECONFIG=/tmp/kubeconfig
 crane export --export-dir /tmp/export
 crane transform --export-dir /tmp/export/resources --plugin-dir /opt --transform-dir /tmp/transform
