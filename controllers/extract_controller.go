@@ -271,7 +271,13 @@ func (r *ExtractReconciler) jobGitForExtract(m *primerv1alpha1.Extract) *batchv1
 						ImagePullPolicy: "IfNotPresent",
 						Image:           "quay.io/octo-emerging/gitops-primer-extract:latest",
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
-						Env:             []corev1.EnvVar{},
+						Env: []corev1.EnvVar{
+							{Name: "REPO", Value: m.Spec.Repo},
+							{Name: "BRANCH", Value: m.Spec.Branch},
+							{Name: "EMAIL", Value: m.Spec.Email},
+							{Name: "NAMESPACE", Value: m.Namespace},
+							{Name: "METHOD", Value: m.Spec.Method},
+						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "sshkeys", MountPath: "/keys"},
 							{Name: "output", MountPath: "/output"},
@@ -316,7 +322,10 @@ func (r *ExtractReconciler) jobDownloadForExtract(m *primerv1alpha1.Extract) *ba
 						ImagePullPolicy: "IfNotPresent",
 						Image:           "quay.io/octo-emerging/gitops-primer-extract:latest",
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
-						Env:             []corev1.EnvVar{},
+						Env: []corev1.EnvVar{
+							{Name: "METHOD", Value: m.Spec.Method},
+							{Name: "NAMESPACE", Value: m.Namespace},
+						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "output", MountPath: "/output"},
 						},
