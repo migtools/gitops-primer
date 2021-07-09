@@ -18,16 +18,20 @@ make deploy
 ```
 
 ## Running
+Although there are two examples that are given within the examples directory the only one that will be usable to you is *export-to-git.yaml*. This is because *download-export.yaml* requires a different pod to present the downloadable content to you. The information below will focus on the git method.
+
+WARNING: Please use a private git repository in this example!
+
 A secret containing an SSH key that is linked to the Git Repository must be created before running GitOps Primer. Follow the steps to add a new SSH key to your GitHub account(https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account).
 
 ```
 oc create secret generic secret-key --from-file=id_rsa=~/.ssh/id_rsa
 ```
 
-Now that the SSH key is loaded modify the file examples/extract.yaml to define the git branch and repository to use and then deploy.
+Now that the SSH key is loaded modify the file examples/export-to-git.yaml to define the git branch and private repository to use and then deploy.
 
 ```
-oc create -f examples/extract.yaml
+oc create -f examples/export-to-git.yaml
 ```
 
 After the job completes, items will exist within your git repository.
