@@ -28,8 +28,8 @@ Host *
 SSHCONFIG
 
 # Setup the repository
-git clone ${REPO} /repo -q
-cd /repo
+git clone ${REPO} /repo/${NAMESPACE} -q
+cd /repo/${NAMESPACE}
 git fetch -q 
 existed_in_remote=$(git ls-remote --heads origin ${BRANCH})
 if [[ -z ${existed_in_remote} ]]; then
@@ -72,7 +72,7 @@ users:
 export KUBECONFIG=/tmp/kubeconfig
 crane export --export-dir /tmp/export
 crane transform --export-dir /tmp/export/resources --plugin-dir /opt --transform-dir /tmp/transform
-crane apply --export-dir /tmp/export/resources --transform-dir /tmp/transform --output-dir /repo
+crane apply --export-dir /tmp/export/resources --transform-dir /tmp/transform --output-dir /repo/${NAMESPACE}
 
 git add *
 git commit -am 'bot commit'
