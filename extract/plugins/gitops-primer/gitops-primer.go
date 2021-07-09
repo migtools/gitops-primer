@@ -41,6 +41,8 @@ func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
 		whiteout = ExtractJob(*u)
 	case "Secret":
 		whiteout = ExtractSecret(*u)
+	case "PersistentVolumeClaim":
+		whiteout = ExtractPVC(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
@@ -73,6 +75,11 @@ func ExtractJob(u unstructured.Unstructured) bool {
 }
 
 func ExtractSecret(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefault(check)
+}
+
+func ExtractPVC(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
