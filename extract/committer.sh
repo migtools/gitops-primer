@@ -75,6 +75,7 @@ crane export --export-dir /tmp/export
 crane transform --export-dir /tmp/export/resources --plugin-dir /opt --transform-dir /tmp/transform
 crane apply --export-dir /tmp/export/resources --transform-dir /tmp/transform --output-dir /output/repo
 
+
 if [ ${METHOD} == "git" ]; then 
   git add *
   git commit -am 'bot commit'
