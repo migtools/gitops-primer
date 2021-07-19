@@ -3,7 +3,7 @@ apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
 timeout: 100
 collectors:
-  - selector: job-name=gitops-primer-ci
+  - selector: job-name=primer-extract-ci
 ---
 apiVersion: primer.gitops.io/v1alpha1
 kind: Extract
