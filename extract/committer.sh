@@ -72,9 +72,9 @@ if [ ${METHOD} == "download" ]; then
 fi
 
 export KUBECONFIG=/tmp/kubeconfig
-crane export --export-dir /tmp/export
+crane export -e /tmp/export
 crane transform -e /tmp/export/resources -p /opt -t /tmp/transform
-crane apply --export-dir /tmp/export/resources --transform-dir /tmp/transform --output-dir /output/repo
+crane apply -e /tmp/export/resources -t /tmp/transform --output-dir /output/repo
 
 
 if [ ${METHOD} == "git" ]; then 
