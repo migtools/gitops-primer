@@ -29,6 +29,7 @@ Host *
 SSHCONFIG
 
   # Setup the repository
+  rm -rf /output/*
   git clone ${REPO} /output/repo -q
   cd /output/repo
   git fetch -q 
@@ -72,7 +73,7 @@ fi
 
 export KUBECONFIG=/tmp/kubeconfig
 crane export --export-dir /tmp/export
-crane transform --export-dir /tmp/export/resources --plugin-dir /opt --transform-dir /tmp/transform
+crane transform -e /tmp/export/resources -p /opt -t /tmp/transform
 crane apply --export-dir /tmp/export/resources --transform-dir /tmp/transform --output-dir /output/repo
 
 
