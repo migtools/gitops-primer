@@ -95,7 +95,7 @@ test: manifests generate fmt vet ## Run tests.
 
 .PHONY: test-e2e
 test-e2e: kuttl ## Run e2e tests. Requires cluster w/ Scribe already installed
-	cd test-kuttl && $(KUTTL) test
+	cd test-kuttl && $(KUTTL) test --namespace test
 	rm -f test-kuttl/kubeconfig
 
 ##@ Build
