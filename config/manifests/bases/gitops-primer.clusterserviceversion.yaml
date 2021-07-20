@@ -1,0 +1,45 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: gitops-primer.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Extract is the Schema for the extracts API
+      displayName: Extract
+      kind: Extract
+      name: extracts.primer.gitops.io
+      version: v1alpha1
+  description: extract and normalize kubernetes based yaml's for GitOps
+  displayName: gitops-primer
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - gitops
+  - operator
+  links:
+  - name: Gitops Primer
+    url: https://gitops-primer.domain
+  maturity: alpha
+  provider:
+    name: OCTO-ET
+  version: 0.0.0

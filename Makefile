@@ -32,6 +32,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # example.com/gitops-primer-bundle:$VERSION and example.com/gitops-primer-catalog:$VERSION.
 IMAGE_TAG_BASE ?= quay.io/octo-emerging/gitops-primer
+# IMAGE_TAG_BASE ?= quay.io/screeley44/gitops-primer
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
@@ -39,6 +40,7 @@ BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
 IMG ?= quay.io/octo-emerging/gitops-primer:latest
+# IMG ?= quay.io/screeley44/gitops-primer-bundle:v0.0.1
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 
