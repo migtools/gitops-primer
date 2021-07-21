@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/konveyor/crane-lib/transform"
 	"github.com/konveyor/crane-lib/transform/cli"
@@ -10,17 +8,10 @@ import (
 )
 
 func main() {
-	// TODO: add plumbing for logger in the cli-library and instantiate here
-	// TODO: add plumbing for passing flags in the cli-library
-	u, err := cli.Unstructured(cli.ObjectReaderOrDie())
-	if err != nil {
-		cli.WriterErrorAndExit(fmt.Errorf("error getting unstructured object: %#v", err))
-	}
-
-	cli.RunAndExit(cli.NewCustomPlugin("BuildPlugin", Run), u)
+	cli.RunAndExit(cli.NewCustomPlugin("WhiteoutBuildsPlugin", "v1", nil, Run))
 }
 
-func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
+func Run(u *unstructured.Unstructured, extras map[string]string) (transform.PluginResponse, error) {
 	// plugin writers need to write custome code here.
 	var patch jsonpatch.Patch
 	var whiteout bool
