@@ -330,6 +330,8 @@ github.com/konveyor/crane-lib v0.0.0-20210625191534-a5ead85cb740 h1:LhVcyJV3Zq+b
 github.com/konveyor/crane-lib v0.0.0-20210625191534-a5ead85cb740/go.mod h1:bvMO9AG+cL0NqsxnpGSWKICNZPJIjK98juXjXtTpj6Y=
 github.com/konveyor/crane-lib v0.0.0-20210630183152-1bf12d0d8579 h1:SXUrOYMe3XEg4sJrAR3u6dULhNWm3l3xto9fv3xYKtc=
 github.com/konveyor/crane-lib v0.0.0-20210630183152-1bf12d0d8579/go.mod h1:bvMO9AG+cL0NqsxnpGSWKICNZPJIjK98juXjXtTpj6Y=
+github.com/konveyor/crane-lib v0.0.0-20210720152609-6412163dfd63 h1:hMCJDVzXiOGdK8cSuwoVCmT9meaFkMwp8uYRWKJp51s=
+github.com/konveyor/crane-lib v0.0.0-20210720152609-6412163dfd63/go.mod h1:bvMO9AG+cL0NqsxnpGSWKICNZPJIjK98juXjXtTpj6Y=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.2.0/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
