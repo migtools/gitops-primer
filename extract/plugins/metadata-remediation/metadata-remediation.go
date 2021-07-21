@@ -10,15 +10,10 @@ import (
 )
 
 func main() {
-	u, err := cli.Unstructured(cli.ObjectReaderOrDie())
-	if err != nil {
-		cli.WriterErrorAndExit(fmt.Errorf("error getting unstructured object: %#v", err))
-	}
-
-	cli.RunAndExit(cli.NewCustomPlugin("MetadataRemediation", Run), u)
+	cli.RunAndExit(cli.NewCustomPlugin("MetadataRemovalPlugin", "v1", nil, Run))
 }
 
-func Run(u *unstructured.Unstructured) (transform.PluginResponse, error) {
+func Run(u *unstructured.Unstructured, extras map[string]string) (transform.PluginResponse, error) {
 	// plugin writers need to write custome code here.
 	patch, err := RemoveFields(*u)
 
