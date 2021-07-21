@@ -9,6 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+var extractName = []string{"primer-extract-"}
+
 func main() {
 	cli.RunAndExit(cli.NewCustomPlugin("WhiteoutExtractPlugin", "v1", nil, Run))
 }
