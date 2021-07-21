@@ -32,7 +32,7 @@ const (
 	ReconciledReasonError status.ConditionReason = "ReconcileError"
 )
 
-type ExtractSpec struct {
+type ExportSpec struct {
 	Method string `json:"method"`
 	Branch string `json:"branch,omitempty"`
 	Repo   string `json:"repo,omitempty"`
@@ -40,8 +40,8 @@ type ExtractSpec struct {
 	Secret string `json:"secret,omitempty"`
 }
 
-// ExtractStatus defines the observed state of Extract
-type ExtractStatus struct {
+// ExportStatus defines the observed state of Export
+type ExportStatus struct {
 	Completed  bool              `json:"completed,omitempty"`
 	Conditions status.Conditions `json:"conditions,omitempty"`
 }
@@ -49,24 +49,24 @@ type ExtractStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Extract is the Schema for the extracts API
-type Extract struct {
+// Export is the Schema for the exports API
+type Export struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ExtractSpec   `json:"spec,omitempty"`
-	Status ExtractStatus `json:"status,omitempty"`
+	Spec   ExportSpec   `json:"spec,omitempty"`
+	Status ExportStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// ExtractList contains a list of Extract
-type ExtractList struct {
+// ExportList contains a list of Export
+type ExportList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Extract `json:"items"`
+	Items           []Export `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Extract{}, &ExtractList{})
+	SchemeBuilder.Register(&Export{}, &ExportList{})
 }

@@ -13,7 +13,7 @@ resources:
   controller: true
   domain: gitops.io
   group: primer
-  kind: Extract
+  kind: Export
   path: github.com/cooktheryan/gitops-primer/api/v1alpha1
   version: v1alpha1
 version: "3"

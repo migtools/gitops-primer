@@ -9,10 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-var extractName = []string{"primer-extract-"}
+var exportName = []string{"primer-export-"}
 
 func main() {
-	cli.RunAndExit(cli.NewCustomPlugin("WhiteoutExtractPlugin", "v1", nil, Run))
+	cli.RunAndExit(cli.NewCustomPlugin("WhiteoutExportPlugin", "v1", nil, Run))
 }
 
 func Run(u *unstructured.Unstructured, extras map[string]string) (transform.PluginResponse, error) {
@@ -21,20 +21,20 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 	var err error
 	var whiteout bool
 	switch u.GetKind() {
-	case "Extract":
+	case "Export":
 		whiteout = true
 	case "ServiceAccount":
-		whiteout = ExtractServiceAccount(*u)
+		whiteout = ExportServiceAccount(*u)
 	case "RoleBinding":
-		whiteout = ExtractRoleBinding(*u)
+		whiteout = ExportRoleBinding(*u)
 	case "Role":
-		whiteout = ExtractRole(*u)
+		whiteout = ExportRole(*u)
 	case "Job":
-		whiteout = ExtractJob(*u)
+		whiteout = ExportJob(*u)
 	case "Secret":
-		whiteout = ExtractSecret(*u)
+		whiteout = ExportSecret(*u)
 	case "PersistentVolumeClaim":
-		whiteout = ExtractPVC(*u)
+		whiteout = ExportPVC(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
@@ -46,38 +46,38 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 	}, nil
 }
 
-func ExtractServiceAccount(u unstructured.Unstructured) bool {
+func ExportServiceAccount(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
 
-func ExtractRoleBinding(u unstructured.Unstructured) bool {
+func ExportRoleBinding(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
 
-func ExtractRole(u unstructured.Unstructured) bool {
+func ExportRole(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
 
-func ExtractJob(u unstructured.Unstructured) bool {
+func ExportJob(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
 
-func ExtractSecret(u unstructured.Unstructured) bool {
+func ExportSecret(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
 
-func ExtractPVC(u unstructured.Unstructured) bool {
+func ExportPVC(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
 
 func isDefault(name string) bool {
-	for _, d := range extractName {
+	for _, d := range exportName {
 		if strings.Contains(name, d) {
 			return true
 		}

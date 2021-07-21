@@ -13,7 +13,7 @@ env:
   KIND_VERSION: "0.9.0"
   GO111MODULE: "on"
   OPERATOR_IMAGE: "quay.io/octo-emerging/gitops-primer"
-  EXTRACT_IMAGE: "quay.io/octo-emerging/gitops-primer-extract"
+  Export_IMAGE: "quay.io/octo-emerging/gitops-primer-export"
 
 
 jobs:
@@ -87,8 +87,8 @@ jobs:
           name: primer-operator
           path: /tmp/operator.tar
 
-  build-extract:
-    name: Build-extract
+  build-export:
+    name: Build-export
     needs: [build-crane, build-plugins]
     runs-on: ubuntu-20.04
 
@@ -97,35 +97,35 @@ jobs:
         uses: actions/checkout@v2
 
       - name: create transform-plugin dir
-        run: mkdir extract/transform-plugins
+        run: mkdir export/transform-plugins
 
       - name: Load binary artifact
         uses: actions/download-artifact@v1
         with:
           name: plugins
-          path: extract/transform-plugins/
+          path: export/transform-plugins/
 
       - name: Load crane artifact
         uses: actions/download-artifact@v1
         with:
           name: crane
-          path: extract/
+          path: export/
 
-      - name: Build extract container
-        run: make -C extract image
+      - name: Build export container
+        run: make -C export image
 
       - name: Export container image
-        run: docker save -o /tmp/extract.tar ${EXTRACT_IMAGE}
+        run: docker save -o /tmp/export.tar ${Export_IMAGE}
 
       - name: Save container as artifact
         uses: actions/upload-artifact@v1
         with:
-          name: extract-image
-          path: /tmp/extract.tar
+          name: export-image
+          path: /tmp/export.tar
 
   e2e:
     name: End-to-end
-    needs: [build-operator, build-extract, build-plugins]
+    needs: [build-operator, build-export, build-plugins]
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -163,20 +163,20 @@ jobs:
           kind load docker-image "${OPERATOR_IMAGE}"
 
 
-      - name: Load extract container artifact
+      - name: Load export container artifact
         uses: actions/download-artifact@v1
         with:
-          name: extract-image
+          name: export-image
           path: /tmp
 
       - name: Import container image into cluster
         run: |
-          docker load -i /tmp/extract.tar
-          docker inspect ${EXTRACT_IMAGE}
-          docker history ${EXTRACT_IMAGE}
-          kind load docker-image "${EXTRACT_IMAGE}:latest"
+          docker load -i /tmp/export.tar
+          docker inspect ${Export_IMAGE}
+          docker history ${Export_IMAGE}
+          kind load docker-image "${Export_IMAGE}:latest"
           sleep 10
-          kind load docker-image "${EXTRACT_IMAGE}:latest"
+          kind load docker-image "${Export_IMAGE}:latest"
 
       - name: Start operator
         run: |
@@ -243,8 +243,8 @@ jobs:
           docker tag "${OPERATOR_IMAGE}" "${OPERATOR_IMAGE}:${TAG}"
           docker push "${OPERATOR_IMAGE}:${TAG}"
 
-  push-extract:
-    name: Push extract container to registry
+  push-export:
+    name: Push export container to registry
     needs: e2e-success
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
@@ -255,18 +255,18 @@ jobs:
       - name: Load container artifact
         uses: actions/download-artifact@v1
         with:
-          name: extract-image
+          name: export-image
           path: /tmp
 
       - name: Import container image
         run: |
-          docker load -i /tmp/extract.tar
-          docker inspect ${EXTRACT_IMAGE}
+          docker load -i /tmp/export.tar
+          docker inspect ${Export_IMAGE}
       - name: Login to registry
         # If the registry server is specified in the image name, we use that.
         # If the server isn't in the image name, default to docker.io
         run: |
-          [[ "${EXTRACT_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          [[ "${Export_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
           echo "Attempting docker login to: ${REGISTRY}"
           echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
       - name: Push to registry (latest)
@@ -274,7 +274,7 @@ jobs:
           (github.event_name == 'push' || github.event_name == 'schedule') &&
           github.ref == 'refs/heads/main'
         run: |
-          docker push "${EXTRACT_IMAGE}"
+          docker push "${Export_IMAGE}"
       - name: Push to registry (version tag)
         if: >
           (github.event_name == 'push' || github.event_name == 'schedule') &&
@@ -283,6 +283,6 @@ jobs:
           [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*) ]] || exit 0
           TAG="${BASH_REMATCH[1]}"
           echo "Pushing to $TAG"
-          docker tag "${EXTRACT_IMAGE}" "${EXTRACT_IMAGE}:${TAG}"
-          docker push "${EXTRACT_IMAGE}:${TAG}"
+          docker tag "${Export_IMAGE}" "${Export_IMAGE}:${TAG}"
+          docker push "${Export_IMAGE}:${TAG}"
 

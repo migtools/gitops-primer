@@ -1,7 +1,7 @@
 [![Validate Primer](https://github.com/cooktheryan/gitops-primer/actions/workflows/validate-primer.yaml/badge.svg)](https://github.com/cooktheryan/gitops-primer/actions/workflows/validate-primer.yaml)
 
 # gitops-primer
-GitOps Primer is an operator can be deployed with a Kubernetes environment to extract objects out of the cluster and store them within a Git repository.
+GitOps Primer is an operator can be deployed with a Kubernetes environment to export objects out of the cluster and store them within a Git repository.
 
 ## Developing
 If you would like to test or develop using GitOps Primer deploy Minikube(https://minikube.sigs.k8s.io/docs/start/) or Kind(https://kind.sigs.k8s.io/) and run the following.

@@ -52,7 +52,7 @@ rules:
 - apiGroups:
   - primer.gitops.io
   resources:
-  - extracts
+  - exports
   verbs:
   - create
   - delete
@@ -64,13 +64,13 @@ rules:
 - apiGroups:
   - primer.gitops.io
   resources:
-  - extracts/finalizers
+  - exports/finalizers
   verbs:
   - update
 - apiGroups:
   - primer.gitops.io
   resources:
-  - extracts/status
+  - exports/status
   verbs:
   - get
   - patch

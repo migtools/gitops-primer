@@ -35,15 +35,15 @@ import (
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
 )
 
-// ExtractReconciler reconciles a Extract object
-type ExtractReconciler struct {
+// ExportReconciler reconciles a Export object
+type ExportReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=primer.gitops.io,resources=extracts,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=primer.gitops.io,resources=extracts/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=primer.gitops.io,resources=extracts/finalizers,verbs=update
+//+kubebuilder:rbac:groups=primer.gitops.io,resources=exports,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=primer.gitops.io,resources=exports/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=primer.gitops.io,resources=exports/finalizers,verbs=update
 //+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
@@ -54,17 +54,17 @@ type ExtractReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Extract object against the actual cluster state, and then
+// the Export object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
-func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 
-	// Fetch the Extract instance
-	instance := &primerv1alpha1.Extract{}
+	// Fetch the Export instance
+	instance := &primerv1alpha1.Export{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
@@ -73,25 +73,25 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			log.Info("Extract resource not found. Ignoring since object must be deleted")
+			log.Info("Export resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		log.Error(err, "Failed to get Extract")
+		log.Error(err, "Failed to get Export")
 		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
 
 	// Check if the Job already exists, if not create a new one
 	found := &batchv1.Job{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, found); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, found); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
 		if errors.IsNotFound(err) {
 			if instance.Spec.Method == "git" {
 				// Define a new job
-				job := r.jobGitForExtract(instance)
+				job := r.jobGitForExport(instance)
 				log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
 				if err = r.Create(ctx, job); err != nil {
 					log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
@@ -102,7 +102,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				return ctrl.Result{Requeue: true}, nil
 			} else if instance.Spec.Method == "download" {
 				// Define a new job
-				job := r.jobDownloadForExtract(instance)
+				job := r.jobDownloadForExport(instance)
 				log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
 				if err = r.Create(ctx, job); err != nil {
 					log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
@@ -120,7 +120,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Check if the Service Account already exists, if not create a new one
 	foundSA := &corev1.ServiceAccount{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundSA); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundSA); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
@@ -144,7 +144,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Check if the Role already exists, if not create a new one
 	foundRole := &rbacv1.Role{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundRole); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundRole); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
@@ -167,7 +167,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Check if the RoleBinding already exists, if not create a new one
 	foundRoleBinding := &rbacv1.RoleBinding{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundRoleBinding); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundRoleBinding); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
@@ -190,7 +190,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Check if the Service Account already exists, if not create a new one
 	foundVolume := &corev1.PersistentVolumeClaim{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-extract-" + instance.Name, Namespace: instance.Namespace}, foundVolume); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundVolume); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
@@ -222,7 +222,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		log.Info("Job completed")
 		log.Info("Cleaning up Primer Resources")
 		if err := r.Status().Update(ctx, instance); err != nil {
-			log.Error(err, "Failed to update Extract status")
+			log.Error(err, "Failed to update Export status")
 			updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
@@ -243,7 +243,7 @@ func (r *ExtractReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-func updateErrCondition(instance *primerv1alpha1.Extract, err error) {
+func updateErrCondition(instance *primerv1alpha1.Export, err error) {
 	instance.Status.Conditions.SetCondition(
 		status.Condition{
 			Type:    primerv1alpha1.ConditionReconciled,
@@ -253,23 +253,23 @@ func updateErrCondition(instance *primerv1alpha1.Extract, err error) {
 		})
 }
 
-// jobGitForExtract returns a instance Job object
-func (r *ExtractReconciler) jobGitForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
+// jobGitForExport returns a instance Job object
+func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Job {
 	mode := int32(0644)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-extract-" + m.Name,
+			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					RestartPolicy:      "Never",
-					ServiceAccountName: "primer-extract-" + m.Name,
+					ServiceAccountName: "primer-export-" + m.Name,
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
-						Image:           "quay.io/octo-emerging/gitops-primer-extract:latest",
+						Image:           "quay.io/octo-emerging/gitops-primer-export:latest",
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "REPO", Value: m.Spec.Repo},
@@ -286,7 +286,7 @@ func (r *ExtractReconciler) jobGitForExtract(m *primerv1alpha1.Extract) *batchv1
 					Volumes: []corev1.Volume{
 						{Name: "output", VolumeSource: corev1.VolumeSource{
 							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: "primer-extract-" + m.Name,
+								ClaimName: "primer-export-" + m.Name,
 							},
 						},
 						},
@@ -305,22 +305,22 @@ func (r *ExtractReconciler) jobGitForExtract(m *primerv1alpha1.Extract) *batchv1
 	return job
 }
 
-// jobGitForExtract returns a instance Job object
-func (r *ExtractReconciler) jobDownloadForExtract(m *primerv1alpha1.Extract) *batchv1.Job {
+// jobGitForExport returns a instance Job object
+func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batchv1.Job {
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-extract-" + m.Name,
+			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					RestartPolicy:      "Never",
-					ServiceAccountName: "primer-extract-" + m.Name,
+					ServiceAccountName: "primer-export-" + m.Name,
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
-						Image:           "quay.io/octo-emerging/gitops-primer-extract:latest",
+						Image:           "quay.io/octo-emerging/gitops-primer-export:latest",
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "METHOD", Value: m.Spec.Method},
@@ -333,7 +333,7 @@ func (r *ExtractReconciler) jobDownloadForExtract(m *primerv1alpha1.Extract) *ba
 					Volumes: []corev1.Volume{
 						{Name: "output", VolumeSource: corev1.VolumeSource{
 							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: "primer-extract-" + m.Name,
+								ClaimName: "primer-export-" + m.Name,
 							},
 						},
 						},
@@ -346,11 +346,11 @@ func (r *ExtractReconciler) jobDownloadForExtract(m *primerv1alpha1.Extract) *ba
 	return job
 }
 
-func (r *ExtractReconciler) saGenerate(m *primerv1alpha1.Extract) *corev1.ServiceAccount {
+func (r *ExportReconciler) saGenerate(m *primerv1alpha1.Export) *corev1.ServiceAccount {
 	// Define a new Service Account object
 	serviceAcct := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-extract-" + m.Name,
+			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
 		},
 	}
@@ -359,11 +359,11 @@ func (r *ExtractReconciler) saGenerate(m *primerv1alpha1.Extract) *corev1.Servic
 	return serviceAcct
 }
 
-func (r *ExtractReconciler) pvcGenerate(m *primerv1alpha1.Extract) *corev1.PersistentVolumeClaim {
+func (r *ExportReconciler) pvcGenerate(m *primerv1alpha1.Export) *corev1.PersistentVolumeClaim {
 	// Define a new PVC object
 	persistentVC := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-extract-" + m.Name,
+			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
@@ -380,10 +380,10 @@ func (r *ExtractReconciler) pvcGenerate(m *primerv1alpha1.Extract) *corev1.Persi
 	return persistentVC
 }
 
-func (r *ExtractReconciler) roleGenerate(m *primerv1alpha1.Extract) *rbacv1.Role {
+func (r *ExportReconciler) roleGenerate(m *primerv1alpha1.Export) *rbacv1.Role {
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-extract-" + m.Name,
+			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -399,19 +399,19 @@ func (r *ExtractReconciler) roleGenerate(m *primerv1alpha1.Extract) *rbacv1.Role
 	return role
 }
 
-func (r *ExtractReconciler) roleBindingGenerate(m *primerv1alpha1.Extract) *rbacv1.RoleBinding {
+func (r *ExportReconciler) roleBindingGenerate(m *primerv1alpha1.Export) *rbacv1.RoleBinding {
 	roleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-extract-" + m.Name,
+			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "primer-extract-" + m.Name,
+			Name:     "primer-export-" + m.Name,
 			Kind:     "Role",
 		},
 		Subjects: []rbacv1.Subject{
-			{Kind: "ServiceAccount", Name: "primer-extract-" + m.Name},
+			{Kind: "ServiceAccount", Name: "primer-export-" + m.Name},
 		},
 	}
 	// Service reconcile finished
@@ -424,9 +424,9 @@ func isJobComplete(job *batchv1.Job) bool {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ExtractReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&primerv1alpha1.Extract{}).
+		For(&primerv1alpha1.Export{}).
 		Owns(&batchv1.Job{}).
 		Owns(&rbacv1.Role{}).
 		Owns(&rbacv1.RoleBinding{}).
