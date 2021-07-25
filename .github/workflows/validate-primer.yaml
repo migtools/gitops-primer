@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: ["main", "release*"]
   schedule:
-    - cron: "15 4 * * 1"  # 4:15 every Monday
+    - cron: "15 4 * * *"  # 4:15 every Monday
 
 env:
   GO_VERSION: "1.16"
