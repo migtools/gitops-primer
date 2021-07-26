@@ -6,7 +6,7 @@ kubectl apply -n test -f - <<EOF
 apiVersion: primer.gitops.io/v1alpha1
 kind: Extract
 metadata:
-  name: ci
+  name: ci-download
 spec:
   method: download
 EOF
