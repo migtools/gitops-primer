@@ -1,0 +1,12 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 100
+---
+apiVersion: primer.gitops.io/v1alpha1
+kind: Export
+metadata:
+  name: ci-download
+  namespace: test
+status:
+  completed: true
