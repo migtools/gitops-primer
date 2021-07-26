@@ -6,7 +6,7 @@ timeout: 100
 apiVersion: primer.gitops.io/v1alpha1
 kind: Extract
 metadata:
-  name: ci
+  name: ci-download
   namespace: test
 status:
   completed: true
