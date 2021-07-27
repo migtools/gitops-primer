@@ -1,5 +1,5 @@
 apiVersion: primer.gitops.io/v1alpha1
-kind: Extract
+kind: Export
 metadata:
   name: primer
 spec:

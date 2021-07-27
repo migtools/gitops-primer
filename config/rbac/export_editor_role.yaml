@@ -1,13 +1,13 @@
-# permissions for end users to edit extracts.
+# permissions for end users to edit exports.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: extract-editor-role
+  name: export-editor-role
 rules:
 - apiGroups:
   - primer.gitops.io
   resources:
-  - extracts
+  - exports
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - primer.gitops.io
   resources:
-  - extracts/status
+  - exports/status
   verbs:
   - get

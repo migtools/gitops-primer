@@ -6,20 +6,20 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: extracts.primer.gitops.io
+  name: exports.primer.gitops.io
 spec:
   group: primer.gitops.io
   names:
-    kind: Extract
-    listKind: ExtractList
-    plural: extracts
-    singular: extract
+    kind: Export
+    listKind: ExportList
+    plural: exports
+    singular: export
   scope: Namespaced
   versions:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Extract is the Schema for the extracts API
+        description: Export is the Schema for the exports API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -49,7 +49,7 @@ spec:
             - method
             type: object
           status:
-            description: ExtractStatus defines the observed state of Extract
+            description: ExportStatus defines the observed state of Export
             properties:
               completed:
                 type: boolean

@@ -4,7 +4,7 @@ set -e -o pipefail
 kubectl apply -n test -f - <<EOF
 ---
 apiVersion: primer.gitops.io/v1alpha1
-kind: Extract
+kind: Export
 metadata:
   name: ci-download
 spec:

@@ -78,11 +78,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.ExtractReconciler{
+	if err = (&controllers.ExportReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Extract")
+		setupLog.Error(err, "unable to create controller", "controller", "Export")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

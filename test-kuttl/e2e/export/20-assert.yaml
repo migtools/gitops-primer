@@ -1,0 +1,12 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+timeout: 100
+collectors:
+  - selector: job-name=primer-export-ci
+---
+apiVersion: v1 
+kind: Pod
+metadata:
+  namespace: test
+  generateName: primer-export-ci-

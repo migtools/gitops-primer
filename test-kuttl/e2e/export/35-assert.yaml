@@ -4,7 +4,7 @@ kind: TestAssert
 timeout: 100
 ---
 apiVersion: primer.gitops.io/v1alpha1
-kind: Extract
+kind: Export
 metadata:
   name: ci-download
   namespace: test
