@@ -1,7 +1,7 @@
 ---
 apiVersion: kuttl.dev/v1beta1
 kind: TestAssert
-timeout: 100
+timeout: 500
 collectors:
   - selector: job-name=primer-export-ci
 ---
