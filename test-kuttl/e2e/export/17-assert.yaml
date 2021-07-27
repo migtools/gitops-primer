@@ -5,8 +5,10 @@ timeout: 100
 collectors:
   - selector: job-name=primer-export-ci
 ---
-apiVersion: v1 
-kind: Pod
+apiVersion: batch/v1
+kind: Job 
 metadata:
+  name: primer-export-ci
   namespace: test
-  generateName: primer-export-ci-
+status:
+  active: 1
