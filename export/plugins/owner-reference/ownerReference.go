@@ -22,6 +22,16 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 		patch, err = RemoveOwner(*u)
 	case "ReplicaSet":
 		patch, err = RemoveOwner(*u)
+	case "Revision":
+		patch, err = RemoveOwner(*u)
+	case "Metric":
+		patch, err = RemoveOwner(*u)
+	case "PodAutoscaler":
+		patch, err = RemoveOwner(*u)
+	case "ServerlessService":
+		patch, err = RemoveOwner(*u)
+	case "Service":
+		patch, err = RemoveOwner(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
