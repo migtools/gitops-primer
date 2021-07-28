@@ -32,6 +32,16 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 		patch, err = RemoveOwner(*u)
 	case "Service":
 		patch, err = RemoveOwner(*u)
+	case "Ingress":
+		patch, err = RemoveOwner(*u)
+	case "Configuration":
+		patch, err = RemoveOwner(*u)
+	case "InMemoryChannel":
+		patch, err = RemoveOwner(*u)
+	case "Route":
+		patch, err = RemoveOwner(*u)
+	case "Subscription":
+		patch, err = RemoveOwner(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
