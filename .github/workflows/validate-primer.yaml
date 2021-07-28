@@ -13,6 +13,7 @@ env:
   KIND_VERSION: "0.9.0"
   GO111MODULE: "on"
   OPERATOR_IMAGE: "quay.io/octo-emerging/gitops-primer"
+  BUNDLE_IMAGE: "quay.io/octo-emerging/gitops-primer-bundle"
   EXPORT_IMAGE: "quay.io/octo-emerging/gitops-primer-export"
 
 
@@ -86,6 +87,31 @@ jobs:
         with:
           name: primer-operator
           path: /tmp/operator.tar
+
+  build-bundle:
+    name: Build-Bundle
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Install Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Build bundle
+        run: make bundle-build
+
+      - name: Export container image
+        run: docker save -o /tmp/bundle.tar ${BUNDLE_IMAGE}
+
+      - name: Save container as artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: primer-bundle
+          path: /tmp/bundle.tar
 
   build-export:
     name: Build-export
@@ -286,3 +312,45 @@ jobs:
           docker tag "${EXPORT_IMAGE}" "${EXPORT_IMAGE}:${TAG}"
           docker push "${EXPORT_IMAGE}:${TAG}"
 
+  push-bundle:
+    name: Push bundle container to registry
+    needs: e2e-success
+    if: >
+      (github.event_name == 'push' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Load container artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: primer-bundle
+          path: /tmp
+
+      - name: Import container image
+        run: |
+          docker load -i /tmp/bundle.tar
+          docker inspect ${BUNDLE_IMAGE}
+      - name: Login to registry
+        # If the registry server is specified in the image name, we use that.
+        # If the server isn't in the image name, default to docker.io
+        run: |
+          [[ "${BUNDLE_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          echo "Attempting docker login to: ${REGISTRY}"
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
+      - name: Push to registry (latest)
+        if: >
+          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          github.ref == 'refs/heads/main'
+        run: |
+          docker push "${BUNDLE_IMAGE}"
+      - name: Push to registry (version tag)
+        if: >
+          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          startsWith(github.ref, 'refs/tags/v')
+        run: |
+          [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*) ]] || exit 0
+          TAG="${BASH_REMATCH[1]}"
+          echo "Pushing to $TAG"
+          docker tag "${BUNDLE_IMAGE}" "${BUNDLE_IMAGE}:${TAG}"
+          docker push "${BUNDLE_IMAGE}:${TAG}"
