@@ -10,12 +10,12 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Extract is the Schema for the extracts API
-      displayName: Extract
-      kind: Extract
-      name: extracts.primer.gitops.io
+    - description: Export is the Schema for the exports API
+      displayName: Export
+      kind: Export
+      name: exports.primer.gitops.io
       version: v1alpha1
-  description: extract and normalize kubernetes based yaml's for GitOps
+  description: export and normalize kubernetes based yaml's for GitOps
   displayName: gitops-primer
   icon:
   - base64data: ""
