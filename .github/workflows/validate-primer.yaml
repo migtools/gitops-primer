@@ -6,7 +6,7 @@ on:
   pull_request:
     branches: ["main", "release*"]
   schedule:
-    - cron: "15 4 * * *"  # 4:15 every Monday
+    - cron: "15 4 * * *"  # 4:15 every day
 
 env:
   GO_VERSION: "1.16"
@@ -15,6 +15,7 @@ env:
   OPERATOR_IMAGE: "quay.io/octo-emerging/gitops-primer"
   BUNDLE_IMAGE: "quay.io/octo-emerging/gitops-primer-bundle"
   EXPORT_IMAGE: "quay.io/octo-emerging/gitops-primer-export"
+  TAG: v0.0.1
 
 
 jobs:
