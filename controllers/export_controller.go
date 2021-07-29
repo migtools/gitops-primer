@@ -46,6 +46,7 @@ type ExportReconciler struct {
 //+kubebuilder:rbac:groups=primer.gitops.io,resources=exports/finalizers,verbs=update
 //+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=service,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
@@ -188,7 +189,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	// Check if the Service Account already exists, if not create a new one
+	// Check if the PVC already exists, if not create a new one
 	foundVolume := &corev1.PersistentVolumeClaim{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundVolume); err != nil {
 		if instance.Status.Completed {
@@ -197,7 +198,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if errors.IsNotFound(err) {
 			// Define a new PVC
 			persistentVC := r.pvcGenerate(instance)
-			log.Info("Creating a new Service Account", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
+			log.Info("Creating a new PVC", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
 			if err := r.Create(ctx, persistentVC); err != nil {
 				log.Error(err, "Failed to create a PVC", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
 
@@ -205,6 +206,34 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				return ctrl.Result{}, err
 			}
 			// Persistent Volume created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
+		log.Error(err, "Failed to get PVC")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
+	}
+
+	if instance.Status.Conditions == nil {
+		instance.Status.Conditions = status.Conditions{}
+	}
+
+	// Check if the PVC already exists, if not create a new one
+	foundService := &corev1.Service{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundService); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
+		if errors.IsNotFound(err) {
+			// Define a new PVC
+			service := r.svcGenerate(instance)
+			log.Info("Creating a new Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+			if err := r.Create(ctx, service); err != nil {
+				log.Error(err, "Failed to create a service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Service created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get PVC")
@@ -417,6 +446,24 @@ func (r *ExportReconciler) roleBindingGenerate(m *primerv1alpha1.Export) *rbacv1
 	// Service reconcile finished
 	ctrl.SetControllerReference(m, roleBinding, r.Scheme)
 	return roleBinding
+}
+
+func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service {
+	service := &corev1.Service{
+		TypeMeta:   metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + m.Name, Namespace: m.Namespace},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{},
+			Selector: map[string]string{
+				"app.kubernetes.io/name":      "primer-export-" + m.Name,
+				"app.kubernetes.io/component": "primer-export-" + m.Name,
+				"app.kubernetes.io/part-of":   "primer-export",
+			},
+		},
+	}
+	// Service reconcile finished
+	ctrl.SetControllerReference(m, service, r.Scheme)
+	return service
 }
 
 func isJobComplete(job *batchv1.Job) bool {
