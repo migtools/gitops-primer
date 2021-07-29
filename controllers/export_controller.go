@@ -477,7 +477,12 @@ func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + m.Name, Namespace: m.Namespace},
 		Spec: corev1.ServiceSpec{
-			Ports: []corev1.ServicePort{},
+			Ports: []corev1.ServicePort{
+				{
+					Port: 8080,
+					Name: "port",
+				},
+			},
 			Selector: map[string]string{
 				"app.kubernetes.io/name":      "primer-export-" + m.Name,
 				"app.kubernetes.io/component": "primer-export-" + m.Name,
@@ -516,14 +521,24 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
-						Image:   "memcached:1.4.36-alpine",
-						Name:    "memcached",
-						Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
+						Image: "registry.redhat.io/rhel8/httpd-24",
+						Name:  "primer-export-" + m.Name,
 						Ports: []corev1.ContainerPort{{
-							ContainerPort: 11211,
-							Name:          "memcached",
+							ContainerPort: 8080,
+							Name:          "downloader",
 						}},
+						VolumeMounts: []corev1.VolumeMount{
+							{Name: "output", MountPath: "/output"},
+						},
 					}},
+					Volumes: []corev1.Volume{
+						{Name: "output", VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "primer-export-" + m.Name,
+							},
+						},
+						},
+					},
 				},
 			},
 		},
