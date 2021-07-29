@@ -528,7 +528,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 							Name:          "downloader",
 						}},
 						VolumeMounts: []corev1.VolumeMount{
-							{Name: "output", MountPath: "/output"},
+							{Name: "output", MountPath: "/var/www"},
 						},
 					}},
 					Volumes: []corev1.Volume{
