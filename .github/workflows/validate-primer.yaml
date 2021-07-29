@@ -14,7 +14,7 @@ env:
   GO111MODULE: "on"
   OPERATOR_IMAGE: "quay.io/octo-emerging/gitops-primer"
   BUNDLE_IMAGE: "quay.io/octo-emerging/gitops-primer-bundle"
-  DOWNLOADER_IMAGE: "quay.io/octo-emerging/gitops-primer-export"
+  EXPORT_IMAGE: "quay.io/octo-emerging/gitops-primer-export"
   DOWNLOADER_IMAGE: "quay.io/octo-emerging/gitops-primer-downloader"
   TAG: v0.0.1
 
