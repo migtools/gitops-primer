@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/operator-framework/operator-lib/status"
+	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -217,7 +218,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		instance.Status.Conditions = status.Conditions{}
 	}
 
-	// Check if the PVC already exists, if not create a new one
+	// Check if the Service already exists, if not create a new one
 	foundService := &corev1.Service{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundService); err != nil {
 		if instance.Status.Completed {
@@ -229,6 +230,30 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			log.Info("Creating a new Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
 			if err := r.Create(ctx, service); err != nil {
 				log.Error(err, "Failed to create a service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Service created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
+		log.Error(err, "Failed to get PVC")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
+	}
+
+	// Check if the Service already exists, if not create a new one
+	foundDeployment := &appsv1.Deployment{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
+		if errors.IsNotFound(err) {
+			// Define a new PVC
+			deployment := r.deploymentGenerate(instance)
+			log.Info("Creating a new Deployment", "service.Namespace", deployment.Namespace, "service.Name", deployment.Name)
+			if err := r.Create(ctx, deployment); err != nil {
+				log.Error(err, "Failed to create a Deployment", "service.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
 
 				updateErrCondition(instance, err)
 				return ctrl.Result{}, err
@@ -450,7 +475,6 @@ func (r *ExportReconciler) roleBindingGenerate(m *primerv1alpha1.Export) *rbacv1
 
 func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service {
 	service := &corev1.Service{
-		TypeMeta:   metav1.TypeMeta{},
 		ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + m.Name, Namespace: m.Namespace},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{},
@@ -466,6 +490,49 @@ func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service
 	return service
 }
 
+func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.Deployment {
+	replicas := int32(1)
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      m.Name,
+			Namespace: m.Namespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app.kubernetes.io/name":      "primer-export-" + m.Name,
+					"app.kubernetes.io/component": "primer-export-" + m.Name,
+					"app.kubernetes.io/part-of":   "primer-export",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app.kubernetes.io/name":      "primer-export-" + m.Name,
+						"app.kubernetes.io/component": "primer-export-" + m.Name,
+						"app.kubernetes.io/part-of":   "primer-export",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Image:   "memcached:1.4.36-alpine",
+						Name:    "memcached",
+						Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
+						Ports: []corev1.ContainerPort{{
+							ContainerPort: 11211,
+							Name:          "memcached",
+						}},
+					}},
+				},
+			},
+		},
+	}
+	// Set Memcached instance as the owner and controller
+	ctrl.SetControllerReference(m, dep, r.Scheme)
+	return dep
+}
+
 func isJobComplete(job *batchv1.Job) bool {
 	return job.Status.Succeeded == 1
 }
@@ -479,5 +546,6 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&corev1.PersistentVolumeClaim{}).
+		Owns(&corev1.Service{}).
 		Complete(r)
 }
