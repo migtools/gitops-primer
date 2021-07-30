@@ -246,7 +246,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Check if the service already exists, if not create a new one
 	foundDeployment := &appsv1.Deployment{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
-		if errors.IsNotFound(err) {
+		if errors.IsNotFound(err) && instance.Status.Completed {
 			// Define a new Deployment
 			deployment := r.deploymentGenerate(instance)
 			log.Info("Creating a new Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
