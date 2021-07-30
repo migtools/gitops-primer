@@ -226,7 +226,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, nil
 		}
 		if errors.IsNotFound(err) {
-			// Define a new PVC
+			// Define a new service
 			service := r.svcGenerate(instance)
 			log.Info("Creating a new Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
 			if err := r.Create(ctx, service); err != nil {
@@ -473,7 +473,10 @@ func (r *ExportReconciler) roleBindingGenerate(m *primerv1alpha1.Export) *rbacv1
 
 func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service {
 	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + m.Name, Namespace: m.Namespace},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "primer-export-" + m.Name,
+			Namespace: m.Namespace,
+		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
