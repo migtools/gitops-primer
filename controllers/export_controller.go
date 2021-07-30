@@ -220,49 +220,45 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Check if the Service already exists, if not create a new one
-	if instance.Spec.Method == "download" && instance.Status.Completed {
-		foundService := &corev1.Service{}
-		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundService); err != nil {
-			if instance.Status.Completed && errors.IsNotFound(err) {
-				// Define a new service
-				service := r.svcGenerate(instance)
-				log.Info("Creating a new Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
-				if err := r.Create(ctx, service); err != nil {
-					log.Error(err, "Failed to create a service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+	foundService := &corev1.Service{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundService); err != nil {
+		if instance.Status.Completed && errors.IsNotFound(err) {
+			// Define a new service
+			service := r.svcGenerate(instance)
+			log.Info("Creating a new Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+			if err := r.Create(ctx, service); err != nil {
+				log.Error(err, "Failed to create a service", "service.Namespace", service.Namespace, "service.Name", service.Name)
 
-					updateErrCondition(instance, err)
-					return ctrl.Result{}, err
-				}
-				// Service created successfully - return and requeue
-				return ctrl.Result{Requeue: true}, nil
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
 			}
-			log.Error(err, "Failed to get service")
-			updateErrCondition(instance, err)
-			return ctrl.Result{}, err
+			// Service created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
 		}
+		log.Error(err, "Failed to get service")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
 	}
 
 	// Check if the Deployment already exists, if not create a new one
-	if instance.Spec.Method == "download" && instance.Status.Completed {
-		foundDeployment := &appsv1.Deployment{}
-		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
-			if instance.Status.Completed && errors.IsNotFound(err) {
-				// Define a new Deployment
-				deployment := r.deploymentGenerate(instance)
-				log.Info("Creating a new Deployment", "service.Namespace", deployment.Namespace, "service.Name", deployment.Name)
-				if err := r.Create(ctx, deployment); err != nil {
-					log.Error(err, "Failed to create a Deployment", "service.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
+	foundDeployment := &appsv1.Deployment{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
+		if instance.Status.Completed && errors.IsNotFound(err) {
+			// Define a new Deployment
+			deployment := r.deploymentGenerate(instance)
+			log.Info("Creating a new Deployment", "service.Namespace", deployment.Namespace, "service.Name", deployment.Name)
+			if err := r.Create(ctx, deployment); err != nil {
+				log.Error(err, "Failed to create a Deployment", "service.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
 
-					updateErrCondition(instance, err)
-					return ctrl.Result{}, err
-				}
-				// Service created successfully - return and requeue
-				return ctrl.Result{Requeue: true}, nil
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
 			}
-			log.Error(err, "Failed to get Deployment")
-			updateErrCondition(instance, err)
-			return ctrl.Result{}, err
+			// Service created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
 		}
+		log.Error(err, "Failed to get Deployment")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
 	}
 
 	if instance.Status.Conditions == nil {
