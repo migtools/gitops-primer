@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"github.com/operator-framework/operator-lib/status"
+	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -46,6 +47,8 @@ type ExportReconciler struct {
 //+kubebuilder:rbac:groups=primer.gitops.io,resources=exports/finalizers,verbs=update
 //+kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
@@ -188,7 +191,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	// Check if the Service Account already exists, if not create a new one
+	// Check if the PVC already exists, if not create a new one
 	foundVolume := &corev1.PersistentVolumeClaim{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundVolume); err != nil {
 		if instance.Status.Completed {
@@ -197,7 +200,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if errors.IsNotFound(err) {
 			// Define a new PVC
 			persistentVC := r.pvcGenerate(instance)
-			log.Info("Creating a new Service Account", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
+			log.Info("Creating a new PVC", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
 			if err := r.Create(ctx, persistentVC); err != nil {
 				log.Error(err, "Failed to create a PVC", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
 
@@ -208,6 +211,34 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get PVC")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
+	}
+
+	if instance.Status.Conditions == nil {
+		instance.Status.Conditions = status.Conditions{}
+	}
+
+	// Check if the service already exists, if not create a new one
+	foundService := &corev1.Service{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundService); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
+		if errors.IsNotFound(err) {
+			// Define a new service
+			service := r.svcGenerate(instance)
+			log.Info("Creating a new Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+			if err := r.Create(ctx, service); err != nil {
+				log.Error(err, "Failed to create a Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Service created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
+		log.Error(err, "Failed to get Service")
 		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
@@ -230,6 +261,29 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		r.Delete(ctx, foundRole)
 		r.Delete(ctx, foundRoleBinding)
 		r.Delete(ctx, foundSA)
+
+		if instance.Spec.Method == "download" {
+			log.Info("Serving up Export Download")
+			foundDeployment := &appsv1.Deployment{}
+			if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
+				if errors.IsNotFound(err) {
+					// Define a new Deployment
+					deployment := r.deploymentGenerate(instance)
+					log.Info("Creating a new Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
+					if err := r.Create(ctx, deployment); err != nil {
+						log.Error(err, "Failed to create a Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
+
+						updateErrCondition(instance, err)
+						return ctrl.Result{}, err
+					}
+					// Service created successfully - return and requeue
+					return ctrl.Result{Requeue: true}, nil
+				}
+				log.Error(err, "Failed to get Deployment")
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+		}
 
 		// Set reconcile status condition complete
 		instance.Status.Conditions.SetCondition(
@@ -419,6 +473,84 @@ func (r *ExportReconciler) roleBindingGenerate(m *primerv1alpha1.Export) *rbacv1
 	return roleBinding
 }
 
+func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service {
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "primer-export-" + m.Name,
+			Namespace: m.Namespace,
+		},
+		Spec: corev1.ServiceSpec{
+			Ports: []corev1.ServicePort{
+				{
+					Port: 8080,
+					Name: "port",
+				},
+			},
+			Selector: map[string]string{
+				"app.kubernetes.io/name":      "primer-export-" + m.Name,
+				"app.kubernetes.io/component": "primer-export-" + m.Name,
+				"app.kubernetes.io/part-of":   "primer-export",
+			},
+		},
+	}
+	// Service reconcile finished
+	ctrl.SetControllerReference(m, service, r.Scheme)
+	return service
+}
+
+func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.Deployment {
+	replicas := int32(1)
+	dep := &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "primer-export-" + m.Name,
+			Namespace: m.Namespace,
+		},
+		Spec: appsv1.DeploymentSpec{
+			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					"app.kubernetes.io/name":      "primer-export-" + m.Name,
+					"app.kubernetes.io/component": "primer-export-" + m.Name,
+					"app.kubernetes.io/part-of":   "primer-export",
+				},
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						"app.kubernetes.io/name":      "primer-export-" + m.Name,
+						"app.kubernetes.io/component": "primer-export-" + m.Name,
+						"app.kubernetes.io/part-of":   "primer-export",
+					},
+				},
+				Spec: corev1.PodSpec{
+					Containers: []corev1.Container{{
+						Image: "quay.io/octo-emerging/gitops-primer-downloader:latest",
+						Name:  "primer-export-" + m.Name,
+						Ports: []corev1.ContainerPort{{
+							ContainerPort: 8080,
+							Name:          "downloader",
+						}},
+						VolumeMounts: []corev1.VolumeMount{
+							{Name: "output", MountPath: "/var/www/html"},
+						},
+					}},
+					Volumes: []corev1.Volume{
+						{Name: "output", VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "primer-export-" + m.Name,
+							},
+						},
+						},
+					},
+				},
+			},
+		},
+	}
+	// Set Memcached instance as the owner and controller
+	ctrl.SetControllerReference(m, dep, r.Scheme)
+	return dep
+}
+
 func isJobComplete(job *batchv1.Job) bool {
 	return job.Status.Succeeded == 1
 }
@@ -432,5 +564,7 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&rbacv1.RoleBinding{}).
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&corev1.PersistentVolumeClaim{}).
+		Owns(&corev1.Service{}).
+		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
