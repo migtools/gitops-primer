@@ -244,26 +244,27 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Check if the service already exists, if not create a new one
-	foundDeployment := &appsv1.Deployment{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
-		if errors.IsNotFound(err) && instance.Status.Completed {
-			// Define a new Deployment
-			deployment := r.deploymentGenerate(instance)
-			log.Info("Creating a new Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
-			if err := r.Create(ctx, deployment); err != nil {
-				log.Error(err, "Failed to create a Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
+	if instance.Status.Completed {
+		foundDeployment := &appsv1.Deployment{}
+		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
+			if errors.IsNotFound(err) {
+				// Define a new Deployment
+				deployment := r.deploymentGenerate(instance)
+				log.Info("Creating a new Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
+				if err := r.Create(ctx, deployment); err != nil {
+					log.Error(err, "Failed to create a Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
 
-				updateErrCondition(instance, err)
-				return ctrl.Result{}, err
+					updateErrCondition(instance, err)
+					return ctrl.Result{}, err
+				}
+				// Service created successfully - return and requeue
+				return ctrl.Result{Requeue: true}, nil
 			}
-			// Service created successfully - return and requeue
-			return ctrl.Result{Requeue: true}, nil
+			log.Error(err, "Failed to get Deployment")
+			updateErrCondition(instance, err)
+			return ctrl.Result{}, err
 		}
-		log.Error(err, "Failed to get Deployment")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
 	}
-
 	if instance.Status.Conditions == nil {
 		instance.Status.Conditions = status.Conditions{}
 	}
