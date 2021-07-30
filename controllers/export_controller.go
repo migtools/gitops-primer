@@ -500,7 +500,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 	replicas := int32(1)
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      m.Name,
+			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
