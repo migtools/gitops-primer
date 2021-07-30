@@ -405,7 +405,7 @@ jobs:
       - name: Import container image
         run: |
           docker load -i /tmp/downloader.tar
-          docker inspect ${DOWNLOADER_IMAGE}:${TAG}
+          docker inspect ${DOWNLOADER_IMAGE}
           
           [[ "${DOWNLOADER_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
           echo "Attempting docker login to: ${REGISTRY}"
