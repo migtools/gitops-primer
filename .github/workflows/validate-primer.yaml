@@ -15,6 +15,7 @@ env:
   OPERATOR_IMAGE: "quay.io/octo-emerging/gitops-primer"
   BUNDLE_IMAGE: "quay.io/octo-emerging/gitops-primer-bundle"
   EXPORT_IMAGE: "quay.io/octo-emerging/gitops-primer-export"
+  DOWNLOADER_IMAGE: "quay.io/octo-emerging/gitops-primer-downloader"
   TAG: v0.0.1
 
 
@@ -150,9 +151,29 @@ jobs:
           name: export-image
           path: /tmp/export.tar
 
+  build-downloader:
+    name: Build-downloader
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Build downloader image
+        run: make image
+
+      - name: Export container image
+        run: docker save -o /tmp/downloader.tar ${DOWNLOADER_IMAGE}
+
+      - name: Save container as artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: primer-downloader
+          path: /tmp/downloader.tar
+
   e2e:
     name: End-to-end
-    needs: [build-operator, build-export, build-plugins]
+    needs: [build-operator, build-export, build-plugins, build-downloader]
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
@@ -204,6 +225,21 @@ jobs:
           kind load docker-image "${EXPORT_IMAGE}:latest"
           sleep 10
           kind load docker-image "${EXPORT_IMAGE}:latest"
+
+      - name: Load export container artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: primer-downloader
+          path: /tmp
+
+      - name: Import container image into cluster
+        run: |
+          docker load -i /tmp/downloader.tar
+          docker inspect ${DOWNLOADER_IMAGE}
+          docker history ${DOWNLOADER_IMAGE}
+          kind load docker-image "${DOWNLOADER_IMAGE}:latest"
+          sleep 10
+          kind load docker-image "${DOWNLOADER_IMAGE}:latest"
 
       - name: Start operator
         run: |
@@ -350,3 +386,43 @@ jobs:
           TAG="${BASH_REMATCH[1]}"
           echo "Pushing to $TAG"
           docker push "${BUNDLE_IMAGE}:${TAG}"
+
+  push-downloader:
+    name: Push downloader image to registry
+    needs: e2e-success
+    if: >
+      (github.event_name == 'push' || github.event_name == 'schedule') &&
+      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Load container artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: primer-downloader
+          path: /tmp
+
+      - name: Import container image
+        run: |
+          docker load -i /tmp/downloader.tar
+          docker inspect ${DOWNLOADER_IMAGE}:${TAG}
+          
+          [[ "${DOWNLOADER_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          echo "Attempting docker login to: ${REGISTRY}"
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
+      - name: Push to registry (latest)
+        if: >
+          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          github.ref == 'refs/heads/main'
+        run: |
+          docker push "${DOWNLOADER_IMAGE}"
+      - name: Push to registry (version tag)
+        if: >
+          (github.event_name == 'push' || github.event_name == 'schedule') &&
+          startsWith(github.ref, 'refs/tags/v')
+        run: |
+          [[ "${{ github.ref }}" =~ ^refs/tags/v([0-9]+\..*) ]] || exit 0
+          TAG="${BASH_REMATCH[1]}"
+          echo "Pushing to $TAG"
+          docker tag "${DOWNLOADER_IMAGE}" "${DOWNLOADER_IMAGE}:${TAG}"
+          docker push "${DOWNLOADER_IMAGE}:${TAG}"

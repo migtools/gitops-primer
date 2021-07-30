@@ -243,28 +243,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	// Check if the service already exists, if not create a new one
-	if instance.Status.Completed {
-		foundDeployment := &appsv1.Deployment{}
-		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
-			if errors.IsNotFound(err) {
-				// Define a new Deployment
-				deployment := r.deploymentGenerate(instance)
-				log.Info("Creating a new Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
-				if err := r.Create(ctx, deployment); err != nil {
-					log.Error(err, "Failed to create a Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
-
-					updateErrCondition(instance, err)
-					return ctrl.Result{}, err
-				}
-				// Service created successfully - return and requeue
-				return ctrl.Result{Requeue: true}, nil
-			}
-			log.Error(err, "Failed to get Deployment")
-			updateErrCondition(instance, err)
-			return ctrl.Result{}, err
-		}
-	}
 	if instance.Status.Conditions == nil {
 		instance.Status.Conditions = status.Conditions{}
 	}
@@ -283,6 +261,29 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		r.Delete(ctx, foundRole)
 		r.Delete(ctx, foundRoleBinding)
 		r.Delete(ctx, foundSA)
+
+		if instance.Spec.Method == "download" {
+			log.Info("Serving up Export Download")
+			foundDeployment := &appsv1.Deployment{}
+			if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
+				if errors.IsNotFound(err) {
+					// Define a new Deployment
+					deployment := r.deploymentGenerate(instance)
+					log.Info("Creating a new Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
+					if err := r.Create(ctx, deployment); err != nil {
+						log.Error(err, "Failed to create a Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
+
+						updateErrCondition(instance, err)
+						return ctrl.Result{}, err
+					}
+					// Service created successfully - return and requeue
+					return ctrl.Result{Requeue: true}, nil
+				}
+				log.Error(err, "Failed to get Deployment")
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+		}
 
 		// Set reconcile status condition complete
 		instance.Status.Conditions.SetCondition(
@@ -523,14 +524,14 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
-						Image: "registry.redhat.io/rhel8/httpd-24",
+						Image: "quay.io/octo-emerging/gitops-primer-downloader:latest",
 						Name:  "primer-export-" + m.Name,
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 8080,
 							Name:          "downloader",
 						}},
 						VolumeMounts: []corev1.VolumeMount{
-							{Name: "output", MountPath: "/var/www"},
+							{Name: "output", MountPath: "/var/www/html"},
 						},
 					}},
 					Volumes: []corev1.Volume{
@@ -564,5 +565,6 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&corev1.PersistentVolumeClaim{}).
 		Owns(&corev1.Service{}).
+		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
