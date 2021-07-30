@@ -220,7 +220,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Check if the Service already exists, if not create a new one
-	if instance.Spec.Method == "download" {
+	if instance.Spec.Method == "download" && instance.Status.Completed {
 		foundService := &corev1.Service{}
 		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundService); err != nil {
 			if instance.Status.Completed && errors.IsNotFound(err) {
@@ -243,10 +243,10 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Check if the Deployment already exists, if not create a new one
-	if instance.Spec.Method == "download" {
+	if instance.Spec.Method == "download" && instance.Status.Completed {
 		foundDeployment := &appsv1.Deployment{}
 		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
-			if instance.Status.Completed && instance.Spec.Method == "download" && errors.IsNotFound(err) {
+			if instance.Status.Completed && errors.IsNotFound(err) {
 				// Define a new Deployment
 				deployment := r.deploymentGenerate(instance)
 				log.Info("Creating a new Deployment", "service.Namespace", deployment.Namespace, "service.Name", deployment.Name)
