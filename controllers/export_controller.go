@@ -380,7 +380,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 							{Name: "NAMESPACE", Value: m.Namespace},
 						},
 						VolumeMounts: []corev1.VolumeMount{
-							{Name: "output", MountPath: "/var/www"},
+							{Name: "output", MountPath: "/output"},
 						},
 					}},
 					Volumes: []corev1.Volume{
