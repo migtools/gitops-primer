@@ -14,9 +14,9 @@ rules:
   - get
   - list
 - apiGroups:
-  - batch
+  - apps
   resources:
-  - jobs
+  - deployments
   verbs:
   - create
   - delete
@@ -26,9 +26,9 @@ rules:
   - update
   - watch
 - apiGroups:
-  - ""
+  - batch
   resources:
-  - deployments
+  - jobs
   verbs:
   - create
   - delete
