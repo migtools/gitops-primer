@@ -160,7 +160,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build downloader image
-        run: make image
+        run: make -C downloader image
 
       - name: Export container image
         run: docker save -o /tmp/downloader.tar ${DOWNLOADER_IMAGE}
