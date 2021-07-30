@@ -219,15 +219,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		instance.Status.Conditions = status.Conditions{}
 	}
 
-	// Check if the Service already exists, if not create a new one
+	// Check if the PVC already exists, if not create a new one
 	foundService := &corev1.Service{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundService); err != nil {
-		if instance.Status.Completed && errors.IsNotFound(err) {
-			// Define a new service
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
+		if errors.IsNotFound(err) {
+			// Define a new PVC
 			service := r.svcGenerate(instance)
 			log.Info("Creating a new Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
 			if err := r.Create(ctx, service); err != nil {
-				log.Error(err, "Failed to create a service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+				log.Error(err, "Failed to create a Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
 
 				updateErrCondition(instance, err)
 				return ctrl.Result{}, err
@@ -235,7 +238,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			// Service created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
-		log.Error(err, "Failed to get service")
+		log.Error(err, "Failed to get Service")
 		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
