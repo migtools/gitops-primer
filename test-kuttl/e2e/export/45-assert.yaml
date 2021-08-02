@@ -1,0 +1,17 @@
+---
+apiVersion: kuttl.dev/v1beta1
+kind: TestAssert
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: primer-export-ci-download
+  namespace: test
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: primer-export-primer
+      app.kubernetes.io/name: primer-export-primer
+      app.kubernetes.io/part-of: primer-exportprimer
+  policyTypes:
+  - Ingress
