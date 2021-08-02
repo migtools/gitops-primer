@@ -82,6 +82,6 @@ if [ ${METHOD} == "git" ]; then
   git push origin ${BRANCH} -q
   echo "Merge to ${BRANCH} completed successfully"
 else
-  NS_UID=`kubectl  get ns name -o jsonpath='{.metadata.uid}'`
+  NS_UID=`kubectl get ns ${NAMESPACE} -o jsonpath='{.metadata.uid}'`
   zip /output/${NS_UID} ${NAMESPACE}
 fi
