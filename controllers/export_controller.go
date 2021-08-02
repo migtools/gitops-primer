@@ -514,7 +514,7 @@ func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service
 			Selector: map[string]string{
 				"app.kubernetes.io/name":      "primer-export-" + m.Name,
 				"app.kubernetes.io/component": "primer-export-" + m.Name,
-				"app.kubernetes.io/part-of":   "primer-export" + m.Name,
+				"app.kubernetes.io/part-of":   "primer-export-" + m.Name,
 			},
 		},
 	}
@@ -536,7 +536,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 				MatchLabels: map[string]string{
 					"app.kubernetes.io/name":      "primer-export-" + m.Name,
 					"app.kubernetes.io/component": "primer-export-" + m.Name,
-					"app.kubernetes.io/part-of":   "primer-export" + m.Name,
+					"app.kubernetes.io/part-of":   "primer-export-" + m.Name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
@@ -544,7 +544,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 					Labels: map[string]string{
 						"app.kubernetes.io/name":      "primer-export-" + m.Name,
 						"app.kubernetes.io/component": "primer-export-" + m.Name,
-						"app.kubernetes.io/part-of":   "primer-export" + m.Name,
+						"app.kubernetes.io/part-of":   "primer-export-" + m.Name,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -588,7 +588,7 @@ func (r *ExportReconciler) netPolGenerate(m *primerv1alpha1.Export) *networkingv
 				MatchLabels: map[string]string{
 					"app.kubernetes.io/name":      "primer-export-" + m.Name,
 					"app.kubernetes.io/component": "primer-export-" + m.Name,
-					"app.kubernetes.io/part-of":   "primer-export" + m.Name},
+					"app.kubernetes.io/part-of":   "primer-export-" + m.Name},
 			},
 			Ingress: []networkingv1.NetworkPolicyIngressRule{},
 			PolicyTypes: []networkingv1.PolicyType{
