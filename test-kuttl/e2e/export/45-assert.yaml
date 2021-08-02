@@ -10,8 +10,8 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/component: primer-export-primer
-      app.kubernetes.io/name: primer-export-primer
-      app.kubernetes.io/part-of: primer-exportprimer
+      app.kubernetes.io/component: primer-export-ci-download
+      app.kubernetes.io/name: primer-export-ci-download
+      app.kubernetes.io/part-of: primer-export-ci-download
   policyTypes:
   - Ingress
