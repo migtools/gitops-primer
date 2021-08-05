@@ -43,6 +43,7 @@ type ExportSpec struct {
 // ExportStatus defines the observed state of Export
 type ExportStatus struct {
 	Completed  bool              `json:"completed,omitempty"`
+	Service    string            `json:"service,omitempty"`
 	Conditions status.Conditions `json:"conditions,omitempty"`
 }
 
