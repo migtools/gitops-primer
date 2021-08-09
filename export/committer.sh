@@ -83,5 +83,5 @@ if [ ${METHOD} == "git" ]; then
   echo "Merge to ${BRANCH} completed successfully"
 else
   NS_UID=`kubectl get ns ${NAMESPACE} -o jsonpath='{.metadata.uid}'`
-  zip /output/${NS_UID} ${NAMESPACE}
+  zip /output/${NS_UID} /output/repo/
 fi
