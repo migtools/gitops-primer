@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 
+	pluginv1 "github.com/openshift/api/console/v1alpha1"
 	"github.com/operator-framework/operator-lib/status"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -231,6 +232,30 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			log.Info("Creating a new Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
 			if err := r.Create(ctx, service); err != nil {
 				log.Error(err, "Failed to create a Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Service created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
+		log.Error(err, "Failed to get Service")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
+	}
+
+	// Check if the service already exists, if not create a new one
+	foundPlugin := &pluginv1.ConsolePlugin{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundPlugin); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
+		if errors.IsNotFound(err) {
+			// Define a new plugin
+			plugin := r.pluginGenerate(instance)
+			log.Info("Creating a new console Plugin", "plugin.Namespace", plugin.Namespace, "plugin.Name", plugin.Name)
+			if err := r.Create(ctx, plugin); err != nil {
+				log.Error(err, "Failed to create a console plugin", "plugin.Namespace", plugin.Namespace, "plugin.Name", plugin.Name)
 
 				updateErrCondition(instance, err)
 				return ctrl.Result{}, err
@@ -472,6 +497,26 @@ func (r *ExportReconciler) roleBindingGenerate(m *primerv1alpha1.Export) *rbacv1
 	// Service reconcile finished
 	ctrl.SetControllerReference(m, roleBinding, r.Scheme)
 	return roleBinding
+}
+
+func (r *ExportReconciler) pluginGenerate(m *primerv1alpha1.Export) *pluginv1.ConsolePlugin {
+	plugin := &pluginv1.ConsolePlugin{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "primer-export-" + m.Name,
+			Namespace: m.Namespace,
+		},
+		Spec: pluginv1.ConsolePluginSpec{
+			DisplayName: "",
+			Service: pluginv1.ConsolePluginService{
+				Name:      "primer-export-" + m.Name,
+				Namespace: "m.Namespace",
+				Port:      8080,
+				BasePath:  "/",
+			},
+		},
+	}
+	ctrl.SetControllerReference(m, plugin, r.Scheme)
+	return plugin
 }
 
 func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service {
