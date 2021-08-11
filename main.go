@@ -33,7 +33,6 @@ import (
 
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
 	"github.com/cooktheryan/gitops-primer/controllers"
-	pluginv1 "github.com/openshift/api/console/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -44,7 +43,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(pluginv1.AddToScheme(scheme))
+
 	utilruntime.Must(primerv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
