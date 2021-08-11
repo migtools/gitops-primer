@@ -53,6 +53,7 @@ type ExportReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=console.openshift.io,resources=*,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=*,resources=*,verbs=get;list
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -244,26 +245,25 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	// Check if the service already exists, if not create a new one
-	foundPlugin := &pluginv1.ConsolePlugin{}
+	foundPlugin := &pluginv1.ConsolePlugin{
+		TypeMeta: metav1.TypeMeta{APIVersion: "console.openshift.io/v1alpha1",
+			Kind: "ConsolePlugin"},
+	}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundPlugin); err != nil {
-		if instance.Status.Completed {
-			return ctrl.Result{}, nil
-		}
 		if errors.IsNotFound(err) {
-			// Define a new plugin
-			plugin := r.pluginGenerate(instance)
-			log.Info("Creating a new console Plugin", "plugin.Namespace", plugin.Namespace, "plugin.Name", plugin.Name)
-			if err := r.Create(ctx, plugin); err != nil {
-				log.Error(err, "Failed to create a console plugin", "plugin.Namespace", plugin.Namespace, "plugin.Name", plugin.Name)
+			// Define a new Plugin
+			consolePlugin := r.pluginGenerate(instance)
+			log.Info("Creating a new Console plugin", "consolePlugin.Namespace", consolePlugin.Namespace, "consolePlugin.Name", consolePlugin.Name)
+			if err := r.Create(ctx, consolePlugin); err != nil {
+				log.Error(err, "Failed to create a Console Plugin", "consolePlugin.Namespace", consolePlugin.Namespace, "consolePlugin.Name", consolePlugin.Name)
 
 				updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
-			// Service created successfully - return and requeue
+			// Console Plugin created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
-		log.Error(err, "Failed to get Service")
+		log.Error(err, "Failed to get console Plugin")
 		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
@@ -500,23 +500,27 @@ func (r *ExportReconciler) roleBindingGenerate(m *primerv1alpha1.Export) *rbacv1
 }
 
 func (r *ExportReconciler) pluginGenerate(m *primerv1alpha1.Export) *pluginv1.ConsolePlugin {
-	plugin := &pluginv1.ConsolePlugin{
+	consolePlugin := &pluginv1.ConsolePlugin{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "console.openshift.io/v1alpha1",
+			Kind:       "ConsolePlugin",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Spec: pluginv1.ConsolePluginSpec{
-			DisplayName: "",
+			DisplayName: "primer-export-" + m.Name,
 			Service: pluginv1.ConsolePluginService{
 				Name:      "primer-export-" + m.Name,
-				Namespace: "m.Namespace",
+				Namespace: m.Namespace,
 				Port:      8080,
 				BasePath:  "/",
 			},
 		},
 	}
-	ctrl.SetControllerReference(m, plugin, r.Scheme)
-	return plugin
+	ctrl.SetControllerReference(m, consolePlugin, r.Scheme)
+	return consolePlugin
 }
 
 func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service {
@@ -612,5 +616,6 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.PersistentVolumeClaim{}).
 		Owns(&corev1.Service{}).
 		Owns(&appsv1.Deployment{}).
+		Owns(&pluginv1.ConsolePlugin{}).
 		Complete(r)
 }
