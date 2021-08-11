@@ -245,11 +245,11 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	foundPlugin := &pluginv1.ConsolePlugin{
-		TypeMeta: metav1.TypeMeta{APIVersion: "console.openshift.io/v1alpha1",
-			Kind: "ConsolePlugin"},
-	}
+	foundPlugin := &pluginv1.ConsolePlugin{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundPlugin); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
 		if errors.IsNotFound(err) {
 			// Define a new Plugin
 			consolePlugin := r.pluginGenerate(instance)
@@ -501,10 +501,6 @@ func (r *ExportReconciler) roleBindingGenerate(m *primerv1alpha1.Export) *rbacv1
 
 func (r *ExportReconciler) pluginGenerate(m *primerv1alpha1.Export) *pluginv1.ConsolePlugin {
 	consolePlugin := &pluginv1.ConsolePlugin{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "console.openshift.io/v1alpha1",
-			Kind:       "ConsolePlugin",
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
