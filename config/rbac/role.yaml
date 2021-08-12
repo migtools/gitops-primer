@@ -26,6 +26,18 @@ rules:
   - update
   - watch
 - apiGroups:
+  - apps
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - batch
   resources:
   - jobs
@@ -115,6 +127,18 @@ rules:
   - rbac.authorization.k8s.io
   resources:
   - roles
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - route
   verbs:
   - create
   - delete
