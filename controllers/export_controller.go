@@ -481,12 +481,22 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 
 func (r *ExportReconciler) saGenerate(m *primerv1alpha1.Export) *corev1.ServiceAccount {
 	// Define a new Service Account object
+	routeName := "primer-export-" + m.Name
+	oauthRedirectAnnotation := "serviceaccounts.openshift.io/oauth-redirectreference." + routeName
+	oauthRedirectValue := `{
+  "kind": "OAuthRedirectReference",
+  "apiVersion": "v1",
+  "reference": {
+    "kind": "Route",
+    "name": "` + routeName + `"
+  }
+}`
 	serviceAcct := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
 			Annotations: map[string]string{
-				"serviceaccounts.openshift.io/oauth-redirectreference.primer-export-" + m.Name: "{\"kind\":\"OAuthRedirectReference\",\"apiVersion\":\"v1\",\"reference\":{\"kind\":\"Route\",\"name\":\"primer-export-primer\"}}",
+				oauthRedirectAnnotation: oauthRedirectValue,
 			},
 		},
 	}
