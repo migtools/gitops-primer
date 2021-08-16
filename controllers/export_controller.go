@@ -18,17 +18,22 @@ package controllers
 
 import (
 	"context"
+	"log"
 
+	routev1 "github.com/openshift/api/route/v1"
 	"github.com/operator-framework/operator-lib/status"
+	password "github.com/sethvargo/go-password/password"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -49,9 +54,11 @@ type ExportReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=serviceaccounts,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=route.openshift.io,resources=route,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=*,resources=*,verbs=get;list
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -141,6 +148,54 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get Service Account")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
+	}
+
+	// Check if the Secret already exists, if not create a new one
+	foundSecret := &corev1.Secret{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundSecret); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
+		if errors.IsNotFound(err) {
+			// Define a new Secret
+			proxySecret := r.secretGenerate(instance)
+			log.Info("Creating a new oauth Secret", "proxySecret.Namespace", proxySecret.Namespace, "proxySecret.Name", proxySecret.Name)
+			if err := r.Create(ctx, proxySecret); err != nil {
+				log.Error(err, "Failed to create new oauth Secret", "proxySecret.Namespace", proxySecret.Namespace, "proxySecret.Name", proxySecret.Name)
+
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Secret created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
+		log.Error(err, "Failed to get oauth Secret")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
+	}
+
+	// Check if the Route already exists, if not create a new one
+	foundRoute := &routev1.Route{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundRoute); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
+		if errors.IsNotFound(err) {
+			// Define a new Secret
+			appRoute := r.routeGenerate(instance)
+			log.Info("Creating a new Route", "appRoute.Namespace", appRoute.Namespace, "appRoute.Name", appRoute.Name)
+			if err := r.Create(ctx, appRoute); err != nil {
+				log.Error(err, "Failed to create new Route", "appRoute.Namespace", appRoute.Namespace, "appRoute.Name", appRoute.Name)
+
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Route created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
+		log.Error(err, "Failed to get Route")
 		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
@@ -249,7 +304,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Update status.Nodes if needed
 	instance.Status.Completed = isJobComplete(found)
-	instance.Status.Service = "primer-export-" + instance.Name + ":8080"
 	if instance.Status.Completed {
 		log.Info("Job completed")
 		log.Info("Cleaning up Primer Resources")
@@ -261,7 +315,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationBackground))
 		r.Delete(ctx, foundRole)
 		r.Delete(ctx, foundRoleBinding)
-		r.Delete(ctx, foundSA)
 
 		if instance.Spec.Method == "download" {
 			log.Info("Serving up Export Download")
@@ -403,15 +456,78 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 
 func (r *ExportReconciler) saGenerate(m *primerv1alpha1.Export) *corev1.ServiceAccount {
 	// Define a new Service Account object
+	routeName := "primer-export-" + m.Name
+	oauthRedirectAnnotation := "serviceaccounts.openshift.io/oauth-redirectreference." + routeName
+	oauthRedirectValue := `{
+  	"kind": "OAuthRedirectReference",
+  	"apiVersion": "v1",
+  	"reference": {
+    "kind": "Route",
+    "name": "` + routeName + `"
+ 	}
+	}`
 	serviceAcct := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
+			Annotations: map[string]string{
+				oauthRedirectAnnotation: oauthRedirectValue,
+			},
 		},
 	}
 	// Service reconcile finished
 	ctrl.SetControllerReference(m, serviceAcct, r.Scheme)
 	return serviceAcct
+}
+
+func (r *ExportReconciler) routeGenerate(m *primerv1alpha1.Export) *routev1.Route {
+	// Define a new Route object
+	appRoute := &routev1.Route{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "primer-export-" + m.Name,
+			Namespace: m.Namespace,
+		},
+		Spec: routev1.RouteSpec{
+			To: routev1.RouteTargetReference{
+				Kind: "Service",
+				Name: "primer-export-primer",
+			},
+			AlternateBackends: []routev1.RouteTargetReference{},
+			Port: &routev1.RoutePort{
+				TargetPort: intstr.FromString("oauth-proxy"),
+			},
+			TLS: &routev1.TLSConfig{
+				Termination:                   "reencrypt",
+				InsecureEdgeTerminationPolicy: "Redirect",
+			},
+			WildcardPolicy: "",
+		},
+	}
+
+	// Service reconcile finished
+	ctrl.SetControllerReference(m, appRoute, r.Scheme)
+	return appRoute
+}
+
+func (r *ExportReconciler) secretGenerate(m *primerv1alpha1.Export) *corev1.Secret {
+	// Define a new Secret object
+	random, err := password.Generate(43, 10, 0, false, false)
+	if err != nil {
+		log.Fatal(err)
+	}
+	proxySecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "primer-export-" + m.Name,
+			Namespace: m.Namespace,
+		},
+		Type: "Opaque",
+		Data: map[string][]byte{
+			"session_secret": []byte(random),
+		},
+	}
+	// Service reconcile finished
+	ctrl.SetControllerReference(m, proxySecret, r.Scheme)
+	return proxySecret
 }
 
 func (r *ExportReconciler) pvcGenerate(m *primerv1alpha1.Export) *corev1.PersistentVolumeClaim {
@@ -479,12 +595,19 @@ func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
+			Annotations: map[string]string{
+				"service.alpha.openshift.io/serving-cert-secret-name": "primer-export-" + m.Name + "-tls",
+			},
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
 				{
 					Port: 8080,
-					Name: "port",
+					Name: "primer",
+				},
+				{
+					Port: 8888,
+					Name: "oauth-proxy",
 				},
 			},
 			Selector: map[string]string{
@@ -501,6 +624,9 @@ func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service
 
 func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.Deployment {
 	replicas := int32(1)
+	secretMode := int32(420)
+	primerName := "primer-export-" + m.Name
+	openshiftSar := `{-openshift-sar={"resource": "namespaces","resourceName":` + primerName + `,"namespace": ` + m.Namespace + `,"verb":"get"}"`
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
@@ -524,21 +650,65 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 					},
 				},
 				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{{
-						Image: "quay.io/octo-emerging/gitops-primer-downloader:latest",
-						Name:  "primer-export-" + m.Name,
-						Ports: []corev1.ContainerPort{{
-							ContainerPort: 8080,
-							Name:          "downloader",
-						}},
-						VolumeMounts: []corev1.VolumeMount{
-							{Name: "output", MountPath: "/var/www/html"},
+					Containers: []corev1.Container{
+						{
+							Image: "quay.io/octo-emerging/gitops-primer-downloader:latest",
+							Name:  "primer-export-" + m.Name,
+							Ports: []corev1.ContainerPort{{
+								ContainerPort: 8080,
+								Name:          "downloader",
+							}},
+							VolumeMounts: []corev1.VolumeMount{
+								{Name: "output", MountPath: "/var/www/html"},
+							},
 						},
-					}},
+						{
+							Image: "quay.io/openshift/origin-oauth-proxy:4.7",
+							Name:  "oauth-proxy",
+							Args: []string{
+								"-provider=openshift",
+								"-https-address=:8888",
+								"-http-address=",
+								"-email-domain=*",
+								"-upstream=http://localhost:8080",
+								"-tls-cert=/etc/tls/private/tls.crt",
+								"-tls-key=/etc/tls/private/tls.key",
+								"-client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token",
+								"-cookie-secret-file=/etc/proxy/secrets/session_secret",
+								"-openshift-service-account=primer-export-" + m.Name,
+								"-openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+								"-skip-auth-regex=^/metrics",
+								openshiftSar,
+							},
+							Ports: []corev1.ContainerPort{{
+								ContainerPort: 8888,
+								Name:          "oath-proxy",
+							}},
+							VolumeMounts: []corev1.VolumeMount{
+								{Name: "primer-oauth-tls", MountPath: "/etc/tls/private"},
+								{Name: "secret-primer-proxy", MountPath: "/etc/proxy/secrets"},
+							},
+						},
+					},
+					ServiceAccountName: "primer-export-" + m.Name,
 					Volumes: []corev1.Volume{
 						{Name: "output", VolumeSource: corev1.VolumeSource{
 							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
 								ClaimName: "primer-export-" + m.Name,
+							},
+						},
+						},
+						{Name: "primer-oauth-tls", VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName:  "primer-export-" + m.Name + "-tls",
+								DefaultMode: &secretMode,
+							},
+						},
+						},
+						{Name: "secret-primer-proxy", VolumeSource: corev1.VolumeSource{
+							Secret: &corev1.SecretVolumeSource{
+								SecretName:  "primer-export-" + m.Name,
+								DefaultMode: &secretMode,
 							},
 						},
 						},
@@ -550,6 +720,32 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 	// Set Memcached instance as the owner and controller
 	ctrl.SetControllerReference(m, dep, r.Scheme)
 	return dep
+}
+
+func (r *ExportReconciler) netPolGenerate(m *primerv1alpha1.Export) *networkingv1.NetworkPolicy {
+	// Define a new network Policy
+	networkPolicy := &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "primer-export-" + m.Name,
+			Namespace: m.Namespace,
+		},
+		Spec: networkingv1.NetworkPolicySpec{
+			PodSelector: metav1.LabelSelector{MatchLabels: map[string]string{"app.kubernetes.io/name": "primer-export-" + m.Name, "app.kubernetes.io/component": "primer-export-" + m.Name, "app.kubernetes.io/part-of": "primer-export-" + m.Name}},
+			Ingress: []networkingv1.NetworkPolicyIngressRule{{
+				From: []networkingv1.NetworkPolicyPeer{{
+					NamespaceSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"network.openshift.io/policy-group": "ingress",
+						},
+					},
+				}},
+			}},
+			PolicyTypes: []networkingv1.PolicyType{networkingv1.PolicyTypeIngress},
+		},
+	}
+	// Network Policy reconcile finished
+	ctrl.SetControllerReference(m, networkPolicy, r.Scheme)
+	return networkPolicy
 }
 
 func isJobComplete(job *batchv1.Job) bool {
@@ -567,5 +763,8 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.PersistentVolumeClaim{}).
 		Owns(&corev1.Service{}).
 		Owns(&appsv1.Deployment{}).
+		Owns(&corev1.Secret{}).
+		Owns(&routev1.Route{}).
+		Owns(&networkingv1.NetworkPolicy{}).
 		Complete(r)
 }
