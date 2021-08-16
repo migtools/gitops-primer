@@ -24,19 +24,17 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 	case "Export":
 		whiteout = true
 	case "ServiceAccount":
-		whiteout = ExportObjects(*u)
+		whiteout = ExportServiceAccount(*u)
 	case "RoleBinding":
-		whiteout = ExportObjects(*u)
+		whiteout = ExportRoleBinding(*u)
 	case "Role":
-		whiteout = ExportObjects(*u)
+		whiteout = ExportRole(*u)
 	case "Job":
-		whiteout = ExportObjects(*u)
+		whiteout = ExportJob(*u)
 	case "Secret":
-		whiteout = ExportObjects(*u)
+		whiteout = ExportSecret(*u)
 	case "PersistentVolumeClaim":
-		whiteout = ExportObjects(*u)
-	case "NetworkPolicy":
-		whiteout = ExportObjects(*u)
+		whiteout = ExportPVC(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
@@ -48,7 +46,32 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 	}, nil
 }
 
-func ExportObjects(u unstructured.Unstructured) bool {
+func ExportServiceAccount(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefault(check)
+}
+
+func ExportRoleBinding(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefault(check)
+}
+
+func ExportRole(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefault(check)
+}
+
+func ExportJob(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefault(check)
+}
+
+func ExportSecret(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefault(check)
+}
+
+func ExportPVC(u unstructured.Unstructured) bool {
 	check := u.GetName()
 	return isDefault(check)
 }
