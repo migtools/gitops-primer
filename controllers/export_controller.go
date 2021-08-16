@@ -162,9 +162,9 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if errors.IsNotFound(err) {
 			// Define a new Secret
 			proxySecret := r.secretGenerate(instance)
-			log.Info("Creating a new Secret", "proxySecret.Namespace", proxySecret.Namespace, "proxySecret.Name", proxySecret.Name)
+			log.Info("Creating a new oauth Secret", "proxySecret.Namespace", proxySecret.Namespace, "proxySecret.Name", proxySecret.Name)
 			if err := r.Create(ctx, proxySecret); err != nil {
-				log.Error(err, "Failed to create new Secret", "proxySecret.Namespace", proxySecret.Namespace, "proxySecret.Name", proxySecret.Name)
+				log.Error(err, "Failed to create new oauth Secret", "proxySecret.Namespace", proxySecret.Namespace, "proxySecret.Name", proxySecret.Name)
 
 				updateErrCondition(instance, err)
 				return ctrl.Result{}, err
@@ -172,7 +172,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			// Secret created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
-		log.Error(err, "Failed to get Secret")
+		log.Error(err, "Failed to get oauth Secret")
 		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
@@ -484,13 +484,13 @@ func (r *ExportReconciler) saGenerate(m *primerv1alpha1.Export) *corev1.ServiceA
 	routeName := "primer-export-" + m.Name
 	oauthRedirectAnnotation := "serviceaccounts.openshift.io/oauth-redirectreference." + routeName
 	oauthRedirectValue := `{
-  "kind": "OAuthRedirectReference",
-  "apiVersion": "v1",
-  "reference": {
+  	"kind": "OAuthRedirectReference",
+  	"apiVersion": "v1",
+  	"reference": {
     "kind": "Route",
     "name": "` + routeName + `"
-  }
-}`
+ 	}
+	}`
 	serviceAcct := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
@@ -650,6 +650,8 @@ func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service
 func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.Deployment {
 	replicas := int32(1)
 	secretMode := int32(420)
+	primerName := "primer-export-" + m.Name
+	openshiftSar := `{-openshift-sar={"resource": "namespaces","resourceName":` + primerName + `,"namespace": ` + m.Namespace + `,"verb":"get"}"`
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
@@ -701,7 +703,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 								"-openshift-service-account=primer-export-" + m.Name,
 								"-openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
 								"-skip-auth-regex=^/metrics",
-								"-openshift-sar={\"resource\":\"namespaces\",\"resourceName\":\"primer-export-primer\",\"namespace\": \"test\",\"verb\":\"get\"}",
+								openshiftSar,
 							},
 							Ports: []corev1.ContainerPort{{
 								ContainerPort: 8888,
@@ -753,16 +755,17 @@ func (r *ExportReconciler) netPolGenerate(m *primerv1alpha1.Export) *networkingv
 			Namespace: m.Namespace,
 		},
 		Spec: networkingv1.NetworkPolicySpec{
-			PodSelector: metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app.kubernetes.io/name":      "primer-export-" + m.Name,
-					"app.kubernetes.io/component": "primer-export-" + m.Name,
-					"app.kubernetes.io/part-of":   "primer-export-" + m.Name},
-			},
-			Ingress: []networkingv1.NetworkPolicyIngressRule{},
-			PolicyTypes: []networkingv1.PolicyType{
-				networkingv1.PolicyTypeIngress,
-			},
+			PodSelector: metav1.LabelSelector{MatchLabels: map[string]string{"app.kubernetes.io/name": "primer-export-" + m.Name, "app.kubernetes.io/component": "primer-export-" + m.Name, "app.kubernetes.io/part-of": "primer-export-" + m.Name}},
+			Ingress: []networkingv1.NetworkPolicyIngressRule{{
+				From: []networkingv1.NetworkPolicyPeer{{
+					NamespaceSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"network.openshift.io/policy-group": "ingress",
+						},
+					},
+				}},
+			}},
+			PolicyTypes: []networkingv1.PolicyType{networkingv1.PolicyTypeIngress},
 		},
 	}
 	// Network Policy reconcile finished
