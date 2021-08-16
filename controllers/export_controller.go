@@ -328,7 +328,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Update status.Nodes if needed
 	instance.Status.Completed = isJobComplete(found)
-	instance.Status.Service = "primer-export-" + instance.Name + ":8080"
 	if instance.Status.Completed {
 		log.Info("Job completed")
 		log.Info("Cleaning up Primer Resources")
