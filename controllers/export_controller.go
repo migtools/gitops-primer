@@ -26,7 +26,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -57,7 +56,6 @@ type ExportReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicy,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=route.openshift.io,resources=route,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=*,resources=*,verbs=get;list
@@ -224,53 +222,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	if instance.Spec.Method == "download" {
-		foundNetPol := &networkingv1.NetworkPolicy{}
-		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundNetPol); err != nil {
-			if instance.Status.Completed {
-				return ctrl.Result{}, nil
-			}
-			if errors.IsNotFound(err) {
-				// Define a new Network Policy
-				netPol := r.netPolGenerate(instance)
-				log.Info("Creating a new Network Policy", "netPol.Namespace", netPol.Namespace, "netPol.Name", netPol.Name)
-				if err := r.Create(ctx, netPol); err != nil {
-					log.Error(err, "Failed to create new Network Policy", "netPol.Namespace", netPol.Namespace, "netPol.Name", netPol.Name)
-					updateErrCondition(instance, err)
-					return ctrl.Result{}, err
-				}
-				// NetPol  created successfully - return and requeue
-				return ctrl.Result{Requeue: true}, nil
-			}
-			log.Error(err, "Failed to get Network Policy")
-			updateErrCondition(instance, err)
-			return ctrl.Result{}, err
-		}
-		// Check if the service already exists, if not create a new one
-		foundService := &corev1.Service{}
-		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundService); err != nil {
-			if instance.Status.Completed {
-				return ctrl.Result{}, nil
-			}
-			if errors.IsNotFound(err) {
-				// Define a new service
-				service := r.svcGenerate(instance)
-				log.Info("Creating a new Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
-				if err := r.Create(ctx, service); err != nil {
-					log.Error(err, "Failed to create a Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
-
-					updateErrCondition(instance, err)
-					return ctrl.Result{}, err
-				}
-				// Service created successfully - return and requeue
-				return ctrl.Result{Requeue: true}, nil
-			}
-			log.Error(err, "Failed to get Service")
-			updateErrCondition(instance, err)
-			return ctrl.Result{}, err
-		}
-	}
-
 	// Check if the RoleBinding already exists, if not create a new one
 	foundRoleBinding := &rbacv1.RoleBinding{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundRoleBinding); err != nil {
@@ -320,6 +271,30 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	if instance.Status.Conditions == nil {
 		instance.Status.Conditions = status.Conditions{}
+	}
+
+	// Check if the service already exists, if not create a new one
+	foundService := &corev1.Service{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundService); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
+		if errors.IsNotFound(err) {
+			// Define a new service
+			service := r.svcGenerate(instance)
+			log.Info("Creating a new Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+			if err := r.Create(ctx, service); err != nil {
+				log.Error(err, "Failed to create a Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
+
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Service created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
+		log.Error(err, "Failed to get Service")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
 	}
 
 	if instance.Status.Conditions == nil {
@@ -637,7 +612,7 @@ func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service
 			Selector: map[string]string{
 				"app.kubernetes.io/name":      "primer-export-" + m.Name,
 				"app.kubernetes.io/component": "primer-export-" + m.Name,
-				"app.kubernetes.io/part-of":   "primer-export-" + m.Name,
+				"app.kubernetes.io/part-of":   "primer-export",
 			},
 		},
 	}
@@ -662,7 +637,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 				MatchLabels: map[string]string{
 					"app.kubernetes.io/name":      "primer-export-" + m.Name,
 					"app.kubernetes.io/component": "primer-export-" + m.Name,
-					"app.kubernetes.io/part-of":   "primer-export-" + m.Name,
+					"app.kubernetes.io/part-of":   "primer-export",
 				},
 			},
 			Template: corev1.PodTemplateSpec{
@@ -670,7 +645,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 					Labels: map[string]string{
 						"app.kubernetes.io/name":      "primer-export-" + m.Name,
 						"app.kubernetes.io/component": "primer-export-" + m.Name,
-						"app.kubernetes.io/part-of":   "primer-export-" + m.Name,
+						"app.kubernetes.io/part-of":   "primer-export",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -741,7 +716,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 			},
 		},
 	}
-
+	// Set Memcached instance as the owner and controller
 	ctrl.SetControllerReference(m, dep, r.Scheme)
 	return dep
 }
