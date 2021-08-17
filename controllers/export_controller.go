@@ -246,6 +246,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
+	}
 
 	// Check if the RoleBinding already exists, if not create a new one
 	foundRoleBinding := &rbacv1.RoleBinding{}
