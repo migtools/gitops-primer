@@ -44,6 +44,7 @@ type ExportSpec struct {
 type ExportStatus struct {
 	Completed  bool              `json:"completed,omitempty"`
 	Conditions status.Conditions `json:"conditions,omitempty"`
+	Route      string            `json:"route,omitempty"`
 }
 
 //+kubebuilder:object:root=true
