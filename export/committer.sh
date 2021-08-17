@@ -83,7 +83,7 @@ if [ ${METHOD} == "git" ]; then
   echo "Merge to ${BRANCH} completed successfully"
 else
   cd /output/repo
-  EXPORT_UID=`kubectl get ns ${EXPORT_NAME} -o jsonpath='{.metadata.uid}'`
+  EXPORT_UID=`kubectl get ${EXPORT_NAME} -o jsonpath='{.metadata.uid}'`
   zip -r /output/${EXPORT_UID} ${NAMESPACE}
   rm -rf /output/repo
 fi
