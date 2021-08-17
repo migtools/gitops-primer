@@ -224,6 +224,29 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	if instance.Spec.Method == "download" {
+		foundNetPol := &networkingv1.NetworkPolicy{}
+		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundNetPol); err != nil {
+			if instance.Status.Completed {
+				return ctrl.Result{}, nil
+			}
+			if errors.IsNotFound(err) {
+				// Define a new Network Policy
+				netPol := r.netPolGenerate(instance)
+				log.Info("Creating a new Network Policy", "netPol.Namespace", netPol.Namespace, "netPol.Name", netPol.Name)
+				if err := r.Create(ctx, netPol); err != nil {
+					log.Error(err, "Failed to create new Network Policy", "netPol.Namespace", netPol.Namespace, "netPol.Name", netPol.Name)
+					updateErrCondition(instance, err)
+					return ctrl.Result{}, err
+				}
+				// NetPol  created successfully - return and requeue
+				return ctrl.Result{Requeue: true}, nil
+			}
+			log.Error(err, "Failed to get Network Policy")
+			updateErrCondition(instance, err)
+			return ctrl.Result{}, err
+		}
+
 	// Check if the RoleBinding already exists, if not create a new one
 	foundRoleBinding := &rbacv1.RoleBinding{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundRoleBinding); err != nil {
