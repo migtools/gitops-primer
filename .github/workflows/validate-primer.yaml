@@ -178,7 +178,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        KUBERNETES_VERSIONS: ["1.22.0"]
+        KUBERNETES_VERSIONS: ["1.20.2"]
     env:
       KUBECONFIG: /tmp/kubeconfig
       KUBERNETES_VERSION: ${{ matrix.KUBERNETES_VERSIONS }}
@@ -190,7 +190,7 @@ jobs:
           sudo install ./kind /usr/local/bin && rm kind
 
       - name: Create k8s Kind Cluster
-        run: kind create cluster --kubeconfig /tmp/kubeconfig --image kindest/node:v${KUBERNETES_VERSION}
+        run: kind create cluster --kubeconfig /tmp/kubeconfig
 
       - name: Checkout source
         uses: actions/checkout@v2
@@ -241,19 +241,19 @@ jobs:
           sleep 10
           kind load docker-image "${DOWNLOADER_IMAGE}:latest"
 
-#     - name: Start operator
-#       run: |
-#         make deploy
+      - name: Start operator
+        run: |
+          make deploy
 
-#     - name: hack
-#       run: |
-#         kubectl create ns test
-#         echo "${{ secrets.KEY }}" > /tmp/file 
-#         kubectl create secret generic secret-key --from-file=id_rsa=/tmp/file -n test
+      - name: hack
+        run: |
+          kubectl create ns test
+          echo "${{ secrets.KEY }}" > /tmp/file 
+          kubectl create secret generic secret-key --from-file=id_rsa=/tmp/file -n test
 
-#      - name: Run e2e test
-#        run: |
-#          make test-e2e
+      - name: Run e2e test
+        run: |
+          make test-e2e
 
   e2e-success:
     name: Successful e2e tests
