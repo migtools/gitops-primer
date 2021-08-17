@@ -243,6 +243,7 @@ jobs:
 
       - name: Start operator
         run: |
+          kubectl create -f hack/router-crd.yaml
           make deploy
 
       - name: hack
