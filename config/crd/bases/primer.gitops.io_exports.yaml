@@ -45,6 +45,8 @@ spec:
                 type: string
               secret:
                 type: string
+              user:
+                type: string
             required:
             - method
             type: object
