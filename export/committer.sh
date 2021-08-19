@@ -41,7 +41,7 @@ SSHCONFIG
   git config --global user.email "${EMAIL}"
 fi
 
-TOKEN=`cat /var/run/secrets/kubernetes.io/serviceaccount/token | base64 -w0`
+TOKEN=`cat /var/run/secrets/kubernetes.io/serviceaccount/token`
 CA=`cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt |base64 -w0`
 
 # Generate KUBECONFIG
@@ -49,20 +49,21 @@ echo "
 apiVersion: v1
 kind: Config
 clusters:
-- name: default-cluster
-  cluster:
-    certificate-authority-data: ${CA}
+  - name: mycluster
+    cluster:
+      certificate-authority-data: ${CA}
+      server: https://172.30.0.1:443
 contexts:
-- name: default-context
-  context:
-    cluster: default-cluster
-    namespace: ${NAMESPACE}
-    user: default-user
-current-context: default-context
+  - name: primer-export-primer@mycluster
+    context:
+      cluster: mycluster
+      namespace: test
+      user: primer-export-primer
 users:
-- name: default-user
-  user:
-    token: ${TOKEN}
+  - name: primer-export-primer
+    user:
+      token: ${TOKEN}
+current-context: primer-export-primer@mycluster
 " > /tmp/kubeconfig
 
 if [ ${METHOD} == "download" ]; then
@@ -83,7 +84,7 @@ if [ ${METHOD} == "git" ]; then
   echo "Merge to ${BRANCH} completed successfully"
 else
   cd /output/repo
-  EXPORT_UID=`kubectl get export ${EXPORT_NAME} -o jsonpath='{.metadata.uid}'`
+  EXPORT_UID=`kubectl get export ${EXPORT_NAME} --as=${USER} -o jsonpath='{.metadata.uid}'`
   zip -r /output/${EXPORT_UID} ${NAMESPACE}
   rm -rf /output/repo
 fi
