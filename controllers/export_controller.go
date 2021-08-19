@@ -586,9 +586,9 @@ func (r *ExportReconciler) roleGenerate(m *primerv1alpha1.Export) *rbacv1.Role {
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
-				APIGroups: []string{"*"},
-				Resources: []string{"*"},
-				Verbs:     []string{"get", "list"},
+				APIGroups: []string{""},
+				Resources: []string{"users"},
+				Verbs:     []string{"impersonate"},
 			},
 		},
 	}
