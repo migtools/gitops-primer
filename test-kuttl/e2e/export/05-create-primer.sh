@@ -13,4 +13,5 @@ spec:
   email: nobody@everybody.com
   secret: secret-key
   method: git
+  user: system:admin
 EOF

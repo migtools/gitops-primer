@@ -9,4 +9,5 @@ metadata:
   name: ci-download
 spec:
   method: download
+  user: system:admin
 EOF
