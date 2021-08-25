@@ -52,7 +52,7 @@ clusters:
   - name: mycluster
     cluster:
       certificate-authority-data: ${CA}
-      server: https://172.30.0.1:443
+      server: https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}
 contexts:
   - name: primer-export-primer@mycluster
     context:
