@@ -7,6 +7,12 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - users
+  verbs:
+  - impersonate
+- apiGroups:
   - '*'
   resources:
   - '*'
@@ -139,31 +145,6 @@ rules:
   - rbac.authorization.k8s.io
   resources:
   - clusterroles
-  verbs:
-  - create
-  - delete
-  - get
-  - impersonate
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - rolebindings
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - roles
   verbs:
   - create
   - delete
