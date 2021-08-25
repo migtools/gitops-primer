@@ -405,7 +405,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
-						Image:           "quay.io/octo-emerging/gitops-primer-export:impersonate",
+						Image:           "quay.io/octo-emerging/gitops-primer-export:latest",
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "REPO", Value: m.Spec.Repo},
@@ -456,7 +456,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
-						Image:           "quay.io/octo-emerging/gitops-primer-export:impersonate",
+						Image:           "quay.io/octo-emerging/gitops-primer-export:latest",
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "METHOD", Value: m.Spec.Method},
