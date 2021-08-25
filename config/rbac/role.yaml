@@ -143,6 +143,7 @@ rules:
   - create
   - delete
   - get
+  - impersonate
   - list
   - patch
   - update
