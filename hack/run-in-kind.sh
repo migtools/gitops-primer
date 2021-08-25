@@ -18,13 +18,11 @@ make -C export image
 # Load the images into kind
 # We are using a special tag that should never be pushed to a repo so that it's
 # obvious if we try to run a container other than these intended ones.
-KIND_TAG=latest
 IMAGES=(
-        "quay.io/octo-emerging/gitops-primer"
-        "quay.io/octo-emerging/gitops-primer-export"
-        "quay.io/octo-emerging/gitops-primer-downloader"
+        "quay.io/octo-emerging/gitops-primer:latest"
+        "quay.io/octo-emerging/gitops-primer-export:latest"
+        "quay.io/octo-emerging/gitops-primer-downloader:latest"
 )
 for i in "${IMAGES[@]}"; do
-    docker tag "${i}:latest" "${i}:${KIND_TAG}"
-    kind load docker-image "${i}:${KIND_TAG}"
+    kind load docker-image "${i}"
 done
