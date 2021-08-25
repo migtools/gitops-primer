@@ -413,6 +413,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 							{Name: "EMAIL", Value: m.Spec.Email},
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "METHOD", Value: m.Spec.Method},
+							{Name: "USER", Value: m.Spec.User},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "sshkeys", MountPath: "/keys"},
