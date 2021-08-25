@@ -38,6 +38,7 @@ type ExportSpec struct {
 	Repo   string `json:"repo,omitempty"`
 	Email  string `json:"email,omitempty"`
 	Secret string `json:"secret,omitempty"`
+	User   string `json:"user,omitempty"`
 }
 
 // ExportStatus defines the observed state of Export

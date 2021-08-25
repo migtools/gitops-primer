@@ -56,8 +56,9 @@ type ExportReconciler struct {
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=roles,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=users,verbs=impersonate
 //+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=*,resources=*,verbs=get;list
@@ -202,24 +203,47 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Check if the Role already exists, if not create a new one
-	foundRole := &rbacv1.Role{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundRole); err != nil {
+	foundClusterRole := &rbacv1.ClusterRole{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundClusterRole); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
 		if errors.IsNotFound(err) {
 			// Define a new Role
-			role := r.roleGenerate(instance)
-			log.Info("Creating a new Role", "role.Namespace", role.Namespace, "role.Name", role.Name)
-			if err := r.Create(ctx, role); err != nil {
-				log.Error(err, "Failed to create new Role", "role.Namespace", role.Namespace, "role.Name", role.Name)
+			clusterRole := r.clusterRoleGenerate(instance)
+			log.Info("Creating a new Cluster Role", "clusterRole.Namespace", clusterRole.Namespace, "clusterRole.Name", clusterRole.Name)
+			if err := r.Create(ctx, clusterRole); err != nil {
+				log.Error(err, "Failed to create new Cluster Role", "clusterRole.Namespace", clusterRole.Namespace, "clusterRole.Name", clusterRole.Name)
 				updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
 			// Role created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
-		log.Error(err, "Failed to get Role")
+		log.Error(err, "Failed to get Cluster Role")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
+	}
+
+	// Check if the Role already exists, if not create a new one
+	foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundClusterRoleBinding); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
+		if errors.IsNotFound(err) {
+			// Define a new Role Binding
+			clusterRoleBinding := r.clusterRoleBindingGenerate(instance)
+			log.Info("Creating a new Cluster Role Binding", "clusterRoleBinding.Namespace", clusterRoleBinding.Namespace, "clusterRoleBinding.Name", clusterRoleBinding.Name)
+			if err := r.Create(ctx, clusterRoleBinding); err != nil {
+				log.Error(err, "Failed to create new Cluster Role Binding", "clusterRoleBinding.Namespace", clusterRoleBinding.Namespace, "clusterRoleBinding.Name", clusterRoleBinding.Name)
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Role created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
+		log.Error(err, "Failed to get Cluster Role Binding")
 		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
@@ -246,29 +270,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
-	}
-
-	// Check if the RoleBinding already exists, if not create a new one
-	foundRoleBinding := &rbacv1.RoleBinding{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundRoleBinding); err != nil {
-		if instance.Status.Completed {
-			return ctrl.Result{}, nil
-		}
-		if errors.IsNotFound(err) {
-			// Define a new Role Binding
-			roleBinding := r.roleBindingGenerate(instance)
-			log.Info("Creating a new Role Binding", "roleBinding.Namespace", roleBinding.Namespace, "roleBinding.Name", roleBinding.Name)
-			if err := r.Create(ctx, roleBinding); err != nil {
-				log.Error(err, "Failed to create new Role Binding", "roleBinding.Namespace", roleBinding.Namespace, "roleBinding.Name", roleBinding.Name)
-				updateErrCondition(instance, err)
-				return ctrl.Result{}, err
-			}
-			// Role Binding created successfully - return and requeue
-			return ctrl.Result{Requeue: true}, nil
-		}
-		log.Error(err, "Failed to get Role Binding")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
 	}
 
 	// Check if the PVC already exists, if not create a new one
@@ -339,8 +340,8 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, err
 		}
 		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationBackground))
-		r.Delete(ctx, foundRole)
-		r.Delete(ctx, foundRoleBinding)
+		r.Delete(ctx, foundClusterRole)
+		r.Delete(ctx, foundClusterRoleBinding)
 
 		if instance.Spec.Method == "download" {
 			log.Info("Serving up Export Download")
@@ -411,6 +412,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 							{Name: "EMAIL", Value: m.Spec.Email},
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "METHOD", Value: m.Spec.Method},
+							{Name: "USER", Value: m.Spec.User},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "sshkeys", MountPath: "/keys"},
@@ -460,6 +462,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 							{Name: "METHOD", Value: m.Spec.Method},
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "EXPORT_NAME", Value: m.Name},
+							{Name: "USER", Value: m.Spec.User},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "output", MountPath: "/output"},
@@ -578,27 +581,28 @@ func (r *ExportReconciler) pvcGenerate(m *primerv1alpha1.Export) *corev1.Persist
 	return persistentVC
 }
 
-func (r *ExportReconciler) roleGenerate(m *primerv1alpha1.Export) *rbacv1.Role {
-	role := &rbacv1.Role{
+func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1.ClusterRole {
+	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
-				APIGroups: []string{"*"},
-				Resources: []string{"*"},
-				Verbs:     []string{"get", "list"},
+				APIGroups:     []string{""},
+				Resources:     []string{"users"},
+				Verbs:         []string{"impersonate"},
+				ResourceNames: []string{m.Spec.User},
 			},
 		},
 	}
 	// Service reconcile finished
-	ctrl.SetControllerReference(m, role, r.Scheme)
-	return role
+	ctrl.SetControllerReference(m, clusterRole, r.Scheme)
+	return clusterRole
 }
 
-func (r *ExportReconciler) roleBindingGenerate(m *primerv1alpha1.Export) *rbacv1.RoleBinding {
-	roleBinding := &rbacv1.RoleBinding{
+func (r *ExportReconciler) clusterRoleBindingGenerate(m *primerv1alpha1.Export) *rbacv1.ClusterRoleBinding {
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
@@ -606,15 +610,15 @@ func (r *ExportReconciler) roleBindingGenerate(m *primerv1alpha1.Export) *rbacv1
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Name:     "primer-export-" + m.Name,
-			Kind:     "Role",
+			Kind:     "ClusterRole",
 		},
 		Subjects: []rbacv1.Subject{
-			{Kind: "ServiceAccount", Name: "primer-export-" + m.Name},
+			{Kind: "ServiceAccount", Name: "primer-export-" + m.Name, Namespace: m.Namespace},
 		},
 	}
 	// Service reconcile finished
-	ctrl.SetControllerReference(m, roleBinding, r.Scheme)
-	return roleBinding
+	ctrl.SetControllerReference(m, clusterRoleBinding, r.Scheme)
+	return clusterRoleBinding
 }
 
 func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service {
@@ -788,8 +792,8 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&primerv1alpha1.Export{}).
 		Owns(&batchv1.Job{}).
-		Owns(&rbacv1.Role{}).
-		Owns(&rbacv1.RoleBinding{}).
+		Owns(&rbacv1.ClusterRole{}).
+		Owns(&rbacv1.ClusterRoleBinding{}).
 		Owns(&corev1.ServiceAccount{}).
 		Owns(&corev1.PersistentVolumeClaim{}).
 		Owns(&corev1.Service{}).
