@@ -248,6 +248,7 @@ jobs:
 
       - name: hack
         run: |
+          kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.yaml
           kubectl create ns test
           echo "${{ secrets.KEY }}" > /tmp/file 
           kubectl create secret generic secret-key --from-file=id_rsa=/tmp/file -n test
