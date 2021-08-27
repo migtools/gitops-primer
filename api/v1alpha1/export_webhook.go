@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	v1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -35,12 +34,6 @@ func (r *Export) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-type patchOperation struct {
-	Op    string      `json:"op"`
-	Path  string      `json:"path"`
-	Value interface{} `json:"value,omitempty"`
-}
-
 //+kubebuilder:webhook:path=/mutate-primer-gitops-io-v1alpha1-export,mutating=true,failurePolicy=fail,sideEffects=None,groups=primer.gitops.io,resources=exports,verbs=create;update,versions=v1alpha1,name=mexport.kb.io,admissionReviewVersions={v1,v1beta1}
 
 var _ webhook.Defaulter = &Export{}
@@ -48,10 +41,9 @@ var _ webhook.Defaulter = &Export{}
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Export) Default() {
 	exportlog.Info("default", "name", r.Name)
-	arRequest := &v1.AdmissionReview{}
-	actualUser := arRequest.Request.UserInfo.Username
-
-	exportlog.Info("am i getting anything,", actualUser)
+	if r.Spec.User == "" {
+		r.Spec.User = "bob"
+	}
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
