@@ -57,14 +57,14 @@ var _ webhook.Validator = &Export{}
 func (r *Export) ValidateCreate() error {
 	exportlog.Info("validate create", "name", r.Name)
 
-	return nil
+	return validateUser(r.Spec.User)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *Export) ValidateUpdate(old runtime.Object) error {
 	exportlog.Info("validate update", "name", r.Name)
 
-	return nil
+	return validateUser(r.Spec.User)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
@@ -77,7 +77,7 @@ func (r *Export) ValidateDelete() error {
 
 func validateUser(s string) error {
 	if s != "bob" {
-		return errors.New("Cluster size must be an odd number")
+		return errors.New("username does not match")
 	}
 	return nil
 }
