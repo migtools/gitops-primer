@@ -51,9 +51,7 @@ func (r *Export) Default() {
 	arRequest := &v1.AdmissionReview{}
 	actualUser := arRequest.Request.UserInfo.Username
 
-	if r.Spec.User == "" {
-		r.Spec.User = actualUser
-	}
+	exportlog.Info("am i getting anything,", actualUser)
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
