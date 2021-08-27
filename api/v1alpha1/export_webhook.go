@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"errors"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -70,5 +72,12 @@ func (r *Export) ValidateDelete() error {
 	exportlog.Info("validate delete", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
+	return nil
+}
+
+func validateUser(s string) error {
+	if s != "bob" {
+		return errors.New("Cluster size must be an odd number")
+	}
 	return nil
 }
