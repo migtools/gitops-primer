@@ -23,7 +23,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -58,14 +57,14 @@ var _ webhook.Validator = &Export{}
 func (r *Export) ValidateCreate() error {
 	exportlog.Info("validate create", "name", r.Name)
 
-	return userValidator(r.Spec.User, admission.Request{})
+	return validateUser(r.Spec.User)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *Export) ValidateUpdate(old runtime.Object) error {
 	exportlog.Info("validate update", "name", r.Name)
 
-	return userValidator(r.Spec.User, admission.Request{})
+	return validateUser(r.Spec.User)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
@@ -76,11 +75,8 @@ func (r *Export) ValidateDelete() error {
 	return nil
 }
 
-// podValidator admits a pod if a specific annotation exists.
-func userValidator(s string, req admission.Request) error {
-	exportName := &Export{}
-	user := req.AdmissionRequest.UserInfo.Username
-	if exportName.Spec.User != user {
+func validateUser(s string) error {
+	if s != "bob" {
 		return errors.New("username does not match")
 	}
 	return nil
