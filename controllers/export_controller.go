@@ -296,9 +296,8 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	if instance.Spec.Method == "download" &&  isJobComplete(found){
-		log.Info("Serving up Export Download")
-		foundDeployment := &appsv1.Deployment{}
+	foundDeployment := &appsv1.Deployment{}
+	if instance.Spec.Method == "download" && isJobComplete(found) {
 		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
 			if errors.IsNotFound(err) {
 				// Define a new Deployment
@@ -351,10 +350,9 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		instance.Status.Conditions = status.Conditions{}
 	}
 
-	
-	if isJobComplete(found) && isDeploymentReady(found) {
+	if isJobComplete(found) && isDeploymentReady(foundDeployment) {
 		instance.Status.Completed = true
-	} 
+	}
 	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + string(instance.UID) + ".zip"
 	if instance.Status.Completed {
 		log.Info("Job completed")
@@ -790,7 +788,7 @@ func defineRoute(route *routev1.Route) string {
 }
 
 func isDeploymentReady(deployment *appsv1.Deployment) bool {
-	return deployment.Status.readyReplicas == 1
+	return deployment.Status.ReadyReplicas == 1
 }
 
 // SetupWithManager sets up the controller with the Manager.
