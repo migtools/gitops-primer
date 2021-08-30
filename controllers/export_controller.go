@@ -350,9 +350,12 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		instance.Status.Conditions = status.Conditions{}
 	}
 
-	if isJobComplete(found) && isDeploymentReady(foundDeployment) {
-		instance.Status.Completed = true
+	if instance.Spec.Method != "download" {
+		instance.Status.Completed = isJobComplete(found)
+	} else if instance.Spec.Method == "download" && isDeploymentReady(foundDeployment) {
+		instance.Status.Completed = isJobComplete(found)
 	}
+
 	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + string(instance.UID) + ".zip"
 	if instance.Status.Completed {
 		log.Info("Job completed")
