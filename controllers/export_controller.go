@@ -296,8 +296,8 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	foundDeployment := &appsv1.Deployment{}
 	if instance.Spec.Method == "download" && isJobComplete(found) {
+		foundDeployment := &appsv1.Deployment{}
 		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
 			if errors.IsNotFound(err) {
 				// Define a new Deployment
