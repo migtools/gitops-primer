@@ -17,17 +17,16 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
-	"fmt"
-	"net/http"
+	"errors"
 
+	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
+// log is for logging in this package.
 var (
 	exportlog = logf.Log.WithName("export-resource")
 )
@@ -50,43 +49,39 @@ func (r *Export) Default() {
 	}
 }
 
+// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 //+kubebuilder:webhook:path=/validate-primer-gitops-io-v1alpha1-export,mutating=false,failurePolicy=fail,sideEffects=None,groups=primer.gitops.io,resources=exports,verbs=create;update,versions=v1alpha1,name=vexport.kb.io,admissionReviewVersions={v1,v1beta1}
-// exportValidator validates Exports
-type exportValidator struct {
-	Client  client.Client
-	decoder *admission.Decoder
+
+var _ webhook.Validator = &Export{}
+
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+func (r *Export) ValidateCreate() error {
+	exportlog.Info("validate create", "name", r.Name)
+
+	return userValidator(r.Spec.User, admission.Request{})
 }
 
-func NewExportValidator(c client.Client) admission.Handler {
-	return &exportValidator{Client: c}
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+func (r *Export) ValidateUpdate(old runtime.Object) error {
+	exportlog.Info("validate update", "name", r.Name)
+
+	return userValidator(r.Spec.User, admission.Request{})
 }
 
-// exportValidator admits a export if a specific annotation exists.
-func (v *exportValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
-	export := &Export{}
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+func (r *Export) ValidateDelete() error {
+	exportlog.Info("validate delete", "name", r.Name)
 
-	err := v.decoder.Decode(req, export)
-	if err != nil {
-		return admission.Errored(http.StatusBadRequest, err)
-	}
-
-	key := "example-mutating-admission-webhook"
-	anno, found := export.Annotations[key]
-	if !found {
-		return admission.Denied(fmt.Sprintf("missing annotation %s", key))
-	}
-	if anno != "foo" {
-		return admission.Denied(fmt.Sprintf("annotation %s did not have value %q", key, "foo"))
-	}
-
-	return admission.Allowed("")
+	// TODO(user): fill in your validation logic upon object deletion.
+	return nil
 }
 
-// exportValidator implements admission.DecoderInjector.
-// A decoder will be automatically injected.
-
-// InjectDecoder injects the decoder.
-func (v *exportValidator) InjectDecoder(d *admission.Decoder) error {
-	v.decoder = d
+// podValidator admits a pod if a specific annotation exists.
+func userValidator(s string, req admission.Request) error {
+	exportName := &Export{}
+	user := req.AdmissionRequest.UserInfo.Username
+	if exportName.Spec.User != user {
+		return errors.New("username does not match")
+	}
 	return nil
 }
