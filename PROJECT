@@ -16,4 +16,8 @@ resources:
   kind: Export
   path: github.com/cooktheryan/gitops-primer/api/v1alpha1
   version: v1alpha1
+  webhooks:
+    defaulting: true
+    validation: true
+    webhookVersion: v1beta1
 version: "3"
