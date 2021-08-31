@@ -17,9 +17,15 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"context"
+	"encoding/json"
+	"net/http"
+
+	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 // log is for logging in this package.
@@ -35,11 +41,39 @@ func (r *Export) SetupMutatingWebhookWithManager(mgr ctrl.Manager) error {
 
 //+kubebuilder:webhook:webhookVersions={v1beta1},path=/mutate-primer-gitops-io-v1alpha1-export,mutating=true,failurePolicy=fail,sideEffects=None,groups=primer.gitops.io,resources=exports,verbs=create;update,versions=v1alpha1,name=mexport.kb.io,admissionReviewVersions={v1,v1beta1}
 
-var _ webhook.Defaulter = &Export{}
+// podAnnotator annotates Pods
+type podAnnotator struct {
+	Client  client.Client
+	decoder *admission.Decoder
+}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *Export) Default() {
-	exportlog.Info("default", "name", r.Name)
+// podAnnotator adds an annotation to every incoming pods.
+func (a *podAnnotator) Handle(ctx context.Context, req admission.Request) admission.Response {
+	pod := &corev1.Pod{}
 
-	// TODO(user): fill in your defaulting logic.
+	err := a.decoder.Decode(req, pod)
+	if err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
+	}
+
+	if pod.Annotations == nil {
+		pod.Annotations = map[string]string{}
+	}
+	pod.Annotations["example-mutating-admission-webhook"] = "foo"
+
+	marshaledPod, err := json.Marshal(pod)
+	if err != nil {
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
+
+	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
+}
+
+// podAnnotator implements admission.DecoderInjector.
+// A decoder will be automatically injected.
+
+// InjectDecoder injects the decoder.
+func (a *podAnnotator) InjectDecoder(d *admission.Decoder) error {
+	a.decoder = d
+	return nil
 }
