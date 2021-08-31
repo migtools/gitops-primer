@@ -13,7 +13,7 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /mutate-primer-gitops-io-v1alpha1-export
+      path: /mutate
   failurePolicy: Fail
   name: mexport.kb.io
   rules:

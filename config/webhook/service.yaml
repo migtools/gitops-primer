@@ -10,4 +10,4 @@ spec:
       protocol: TCP
       targetPort: 8080
   selector:
-    control-plane: controller-manager
+    app: export-webhook
