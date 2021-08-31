@@ -35,7 +35,7 @@ func (r *Export) SetupWebhookWithManager(mgr ctrl.Manager) error {
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-//+kubebuilder:webhook:webhookVersions={v1beta1},path=/validate-primer-gitops-io-v1alpha1-export,mutating=false,failurePolicy=fail,sideEffects=None,groups=primer.gitops.io,resources=exports,verbs=create;update,versions=v1alpha1,name=vexport.kb.io,admissionReviewVersions={v1,v1beta1}
+//+kubebuilder:webhook:webhookVersions={v1},path=/validate-primer-gitops-io-v1alpha1-export,mutating=false,failurePolicy=fail,sideEffects=None,groups=primer.gitops.io,resources=exports,verbs=create;update,versions=v1alpha1,name=vexport.kb.io,admissionReviewVersions={v1,v1beta1}
 
 var _ webhook.Validator = &Export{}
 
