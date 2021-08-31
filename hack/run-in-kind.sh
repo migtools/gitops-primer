@@ -14,6 +14,7 @@ docker rmi `docker images | awk '{print $3}'` --force || true
 make docker-build
 make -C downloader image
 make -C export image
+make -C webhook image
 
 # Load the images into kind
 # We are using a special tag that should never be pushed to a repo so that it's
@@ -22,6 +23,7 @@ IMAGES=(
         "quay.io/octo-emerging/gitops-primer:latest"
         "quay.io/octo-emerging/gitops-primer-export:latest"
         "quay.io/octo-emerging/gitops-primer-downloader:latest"
+        "quay.io/octo-emerging/gitops-primer-webhook:latest"
 )
 for i in "${IMAGES[@]}"; do
     kind load docker-image "${i}"
