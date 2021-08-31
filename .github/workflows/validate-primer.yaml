@@ -174,7 +174,7 @@ jobs:
 
 
   build-webhook:
-    name: Build-downloader
+    name: Build-webhook
     runs-on: ubuntu-20.04
 
     steps:
@@ -195,7 +195,7 @@ jobs:
 
   e2e:
     name: End-to-end
-    needs: [build-operator, build-export, build-plugins, build-downloader]
+    needs: [build-operator, build-export, build-plugins, build-downloader, build-webhook]
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
