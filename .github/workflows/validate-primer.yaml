@@ -294,7 +294,7 @@ jobs:
 
   e2e-success:
     name: Successful e2e tests
-    needs: [build-operator, e2e]
+    needs: [e2e]
     runs-on: ubuntu-20.04
     steps:
       - name: Success
