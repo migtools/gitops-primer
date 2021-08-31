@@ -173,15 +173,14 @@ jobs:
           path: /tmp/downloader.tar
 
 
-  build-webhook:
-    name: Build-webhook
+   build-webhook:
+    name: Build-Webhook
     runs-on: ubuntu-20.04
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v2
 
-      - name: Build downloader image
+      - name: Build webhook image
         run: make -C webhook image
 
       - name: Export container image
