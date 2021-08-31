@@ -1,29 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-webhook-deployment
-  namespace: whfun
+  name: mutating-webhook-deployment
+  namespace: system
   labels:
-    app: hello-webhook
+    app: export-webhook
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: hello-webhook
+      app: export-webhook
   template:
     metadata:
       labels:
-        app: hello-webhook
+        app: export-webhook
     spec:
       containers:
-      - name: hello-webhook
+      - name: export-webhook
         # TODO: env var/kustomize this
         # NOTE: update this if using different image
         image: quay.io/rcook/mutating-webhook:test13
         ports:
         - containerPort: 8000
         volumeMounts:
-        - name: hello-tls-secret
+        - name: export-tls-secret
           mountPath: "/tls"
           readOnly: true        
         resources:
@@ -31,6 +31,6 @@ spec:
             memory: "128Mi"
             cpu: "500m"           
       volumes:
-      - name: hello-tls-secret
+      - name: export-tls-secret
         secret:
-          secretName: hello-webhook
+          secretName: export-webhook
