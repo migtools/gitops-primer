@@ -33,4 +33,4 @@ spec:
       volumes:
       - name: export-tls-secret
         secret:
-          secretName: export-webhook
+          secretName: webhook-server-cert
