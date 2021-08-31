@@ -31,7 +31,9 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	"github.com/cooktheryan/gitops-primer/api/v1alpha1"
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
 	"github.com/cooktheryan/gitops-primer/controllers"
 	//+kubebuilder:scaffold:imports
@@ -86,6 +88,9 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Export")
 		os.Exit(1)
 	}
+	pv := v1alpha1.NewPodValidator(mgr.GetClient())
+	mgr.GetWebhookServer().Register("/validate-core-v1-pod", &webhook.Admission{Handler: pv})
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
