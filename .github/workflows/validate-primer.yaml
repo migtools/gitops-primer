@@ -172,7 +172,6 @@ jobs:
           name: primer-downloader
           path: /tmp/downloader.tar
 
-
    build-webhook:
     name: Build-Webhook
     runs-on: ubuntu-20.04
