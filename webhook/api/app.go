@@ -23,17 +23,17 @@ func (app *App) HandleMutate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// unmarshal the pod from the AdmissionRequest
+	// unmarshal the export from the AdmissionRequest
 	ar := admissionReview.Request.UserInfo
 	if err := json.Unmarshal(admissionReview.Request.Object.Raw, &ar); err != nil {
 		app.HandleError(w, r, fmt.Errorf("unmarshal to user: %v", err))
 		return
 	}
 
-	// unmarshal the pod from the AdmissionRequest
+	// unmarshal the export from the AdmissionRequest
 	export := &primerv1alpha1.Export{}
 	if err := json.Unmarshal(admissionReview.Request.Object.Raw, export); err != nil {
-		app.HandleError(w, r, fmt.Errorf("unmarshal to pod: %v", err))
+		app.HandleError(w, r, fmt.Errorf("unmarshal to export: %v", err))
 		return
 	}
 
@@ -46,7 +46,7 @@ func (app *App) HandleMutate(w http.ResponseWriter, r *http.Request) {
 	patch := []JSONPatchEntry{
 		JSONPatchEntry{
 			OP:    "add",
-			Path:  "/Spec/User",
+			Path:  "/spec/user",
 			Value: userName,
 		},
 	}
