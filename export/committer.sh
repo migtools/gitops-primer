@@ -67,7 +67,7 @@ current-context: primer-export-primer@mycluster
 " > /tmp/kubeconfig
 
 if [ ${METHOD} == "download" ]; then
-  mkdir /output/repo
+  mkdir -p /output/repo
   cd /output/repo
 fi
 
@@ -84,8 +84,7 @@ if [ ${METHOD} == "git" ]; then
   echo "Merge to ${BRANCH} completed successfully"
 else
   cd /output/repo
-  EXPORT_UID=`kubectl get export ${EXPORT_NAME} --as=${USER} -o jsonpath='{.metadata.uid}'`
-  zip -r /output/${EXPORT_UID} ${NAMESPACE}
+  zip -r /output/${NAMESPACE}-`date "+%m%d%y-%H%M"` ${NAMESPACE}
   rm -rf /output/repo
 fi
 
