@@ -279,6 +279,7 @@ jobs:
 
       - name: Start operator
         run: |
+          kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.yaml
           kubectl create -f hack/router-crd.yaml
           make deploy
 
