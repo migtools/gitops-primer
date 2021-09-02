@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"log"
+	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/operator-framework/operator-lib/status"
@@ -72,6 +73,7 @@ type ExportReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
+
 func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 
@@ -330,7 +332,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Update status.Nodes if needed
 	instance.Status.Completed = isJobComplete(found)
-	instance.Status.Route = "https://" + defineRoute(foundRoute) + instance.CreationTimestamp.Rfc3339Copy().String() + "/" + instance.Namespace + ".zip"
+	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" +  (t.Format(time.RFC3339) + instance.Namespace + ".zip"
 	if instance.Status.Completed {
 		log.Info("Job completed")
 		log.Info("Cleaning up Primer Resources")
@@ -463,7 +465,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "EXPORT_NAME", Value: m.Name},
 							{Name: "USER", Value: m.Spec.User},
-							{Name: "TIME", Value: m.CreationTimestamp.Rfc3339Copy().String()},
+							{Name: "TIME", Value: (t.Format(time.RFC3339)},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "output", MountPath: "/output"},
@@ -786,6 +788,11 @@ func isJobComplete(job *batchv1.Job) bool {
 
 func defineRoute(route *routev1.Route) string {
 	return route.Spec.Host
+}
+
+func currentTime() string{
+	t := time.Now()
+	return t
 }
 
 // SetupWithManager sets up the controller with the Manager.
