@@ -332,7 +332,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Update status.Nodes if needed
 	instance.Status.Completed = isJobComplete(found)
-	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + currentTime() + instance.Namespace + ".zip"
+	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + instance.Namespace + "-" + currentTime() + ".zip"
 	if instance.Status.Completed {
 		log.Info("Job completed")
 		log.Info("Cleaning up Primer Resources")
