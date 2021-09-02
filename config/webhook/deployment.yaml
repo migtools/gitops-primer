@@ -34,4 +34,4 @@ spec:
       volumes:
       - name: export-tls-secret
         secret:
-          secretName: webhook-server-cert
+          secretName: gitops-primer-mutating-webhook-deployment-service-cert

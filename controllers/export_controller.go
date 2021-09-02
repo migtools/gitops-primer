@@ -584,7 +584,7 @@ func (r *ExportReconciler) pvcGenerate(m *primerv1alpha1.Export) *corev1.Persist
 func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1.ClusterRole {
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-export-" + m.Name,
+			Name:      "primer-export-" + m.Namespace + m.Name,
 			Namespace: m.Namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -609,7 +609,7 @@ func (r *ExportReconciler) clusterRoleBindingGenerate(m *primerv1alpha1.Export) 
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "primer-export-" + m.Name,
+			Name:     "primer-export-" + m.Namespace + m.Name,
 			Kind:     "ClusterRole",
 		},
 		Subjects: []rbacv1.Subject{

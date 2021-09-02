@@ -269,6 +269,36 @@ spec:
                 runAsNonRoot: true
               serviceAccountName: gitops-primer-controller-manager
               terminationGracePeriodSeconds: 10
+      - name: gitops-primer-mutating-webhook-deployment
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: export-webhook
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                app: export-webhook
+            spec:
+              containers:
+              - image: quay.io/octo-emerging/gitops-primer-webhook:latest
+                imagePullPolicy: IfNotPresent
+                name: export-webhook
+                ports:
+                - containerPort: 8000
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                volumeMounts:
+                - mountPath: /tls
+                  name: export-tls-secret
+                  readOnly: true
+              volumes:
+              - name: export-tls-secret
+                secret:
+                  secretName: gitops-primer-mutating-webhook-deployment-service-cert
       permissions:
       - rules:
         - apiGroups:
@@ -323,3 +353,25 @@ spec:
   provider:
     name: OCTO-ET
   version: 0.0.1
+  webhookdefinitions:
+  - admissionReviewVersions:
+    - v1
+    - v1beta1
+    containerPort: 443
+    deploymentName: gitops-primer-mutating-webhook-deployment
+    failurePolicy: Fail
+    generateName: mexport.kb.io
+    rules:
+    - apiGroups:
+      - primer.gitops.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - exports
+    sideEffects: None
+    targetPort: 8000
+    type: MutatingAdmissionWebhook
+    webhookPath: /mutate
