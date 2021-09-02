@@ -292,9 +292,9 @@ jobs:
           echo "${{ secrets.KEY }}" > /tmp/file 
           kubectl create secret generic secret-key --from-file=id_rsa=/tmp/file -n test
 
-      - name: Run e2e test
-        run: |
-          make test-e2e
+#      - name: Run e2e test
+#        run: |
+#          make test-e2e
 
   e2e-success:
     name: Successful e2e tests
