@@ -463,7 +463,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "EXPORT_NAME", Value: m.Name},
 							{Name: "USER", Value: m.Spec.User},
-							{Name: "TIME", Value: m.CreationTimestamp.String()},
+							{Name: "TIME", Value: m.CreationTimestamp.Rfc3339Copy().String()},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "output", MountPath: "/output"},
