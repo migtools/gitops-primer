@@ -22,4 +22,4 @@ spec:
   issuerRef:
     kind: Issuer
     name: selfsigned-issuer
-  secretName: └─ $ gitops-primer-mutating-webhook-deployment-service-cert
+  secretName: gitops-primer-mutating-webhook-deployment-service-cert
