@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"log"
+	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
 	"github.com/operator-framework/operator-lib/status"
@@ -72,6 +73,7 @@ type ExportReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.8.3/pkg/reconcile
+
 func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
 
@@ -204,7 +206,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Check if the Role already exists, if not create a new one
 	foundClusterRole := &rbacv1.ClusterRole{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundClusterRole); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRole); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
@@ -227,7 +229,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Check if the Role already exists, if not create a new one
 	foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundClusterRoleBinding); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRoleBinding); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
@@ -330,7 +332,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Update status.Nodes if needed
 	instance.Status.Completed = isJobComplete(found)
-	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + string(instance.UID) + ".zip"
+	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + instance.Namespace + "-" + instance.ObjectMeta.CreationTimestamp.Rfc3339Copy().Format(time.RFC3339) + ".zip"
 	if instance.Status.Completed {
 		log.Info("Job completed")
 		log.Info("Cleaning up Primer Resources")
@@ -463,6 +465,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "EXPORT_NAME", Value: m.Name},
 							{Name: "USER", Value: m.Spec.User},
+							{Name: "TIME", Value: m.ObjectMeta.CreationTimestamp.Rfc3339Copy().Format(time.RFC3339)},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "output", MountPath: "/output"},
@@ -584,7 +587,7 @@ func (r *ExportReconciler) pvcGenerate(m *primerv1alpha1.Export) *corev1.Persist
 func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1.ClusterRole {
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-export-" + m.Name,
+			Name:      "primer-export-" + m.Namespace + "-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -604,12 +607,12 @@ func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1
 func (r *ExportReconciler) clusterRoleBindingGenerate(m *primerv1alpha1.Export) *rbacv1.ClusterRoleBinding {
 	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-export-" + m.Name,
+			Name:      "primer-export-" + m.Namespace + "-" + m.Name,
 			Namespace: m.Namespace,
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
-			Name:     "primer-export-" + m.Name,
+			Name:     "primer-export-" + m.Namespace + "-" + m.Name,
 			Kind:     "ClusterRole",
 		},
 		Subjects: []rbacv1.Subject{

@@ -78,13 +78,17 @@ crane apply --export-dir /tmp/export/resources --transform-dir /tmp/transform --
 
 
 if [ ${METHOD} == "git" ]; then 
-  git add *
-  git commit -am 'bot commit'
-  git push origin ${BRANCH} -q
-  echo "Merge to ${BRANCH} completed successfully"
+  if [[ $(git status -s) ]]; then
+     git add *
+     git commit -am 'bot commit'
+     git push origin ${BRANCH} -q
+     echo "Merge to ${BRANCH} completed successfully"
+  else
+     exit 0
+  fi
 else
   cd /output/repo
-  zip -r /output/${NAMESPACE}-`date "+%m%d%y-%H%M"` ${NAMESPACE}
+  zip -r /output/${NAMESPACE}-${TIME} ${NAMESPACE}
   rm -rf /output/repo
 fi
 

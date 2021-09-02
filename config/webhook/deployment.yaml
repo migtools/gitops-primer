@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mutating-webhook-deployment
+  namespace: system
+  labels:
+    app: export-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: export-webhook
+  template:
+    metadata:
+      labels:
+        app: export-webhook
+    spec:
+      containers:
+      - name: export-webhook
+        # TODO: env var/kustomize this
+        # NOTE: update this if using different image
+        imagePullPolicy: IfNotPresent
+        image: quay.io/octo-emerging/gitops-primer-webhook:latest 
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: export-tls-secret
+          mountPath: "/tls"
+          readOnly: true        
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"           
+      volumes:
+      - name: export-tls-secret
+        secret:
+          secretName: gitops-primer-mutating-webhook-deployment-service-cert
