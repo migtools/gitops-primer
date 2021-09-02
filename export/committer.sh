@@ -88,7 +88,7 @@ if [ ${METHOD} == "git" ]; then
   fi
 else
   cd /output/repo
-  zip -r /output/${NAMESPACE}-`date "+%m%d%y-%H%M"` ${NAMESPACE}
+  zip -r /output/${NAMESPACE}-${TIME} ${NAMESPACE}
   rm -rf /output/repo
 fi
 
