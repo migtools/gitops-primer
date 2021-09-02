@@ -326,12 +326,39 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	foundDeployment := &appsv1.Deployment{}
+	if instance.Spec.Method == "download" && isJobComplete(found) {
+		log.Info("Serving up Export Download")
+		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
+			if errors.IsNotFound(err) {
+				// Define a new Deployment
+				deployment := r.deploymentGenerate(instance)
+				log.Info("Creating a new Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
+				if err := r.Create(ctx, deployment); err != nil {
+					log.Error(err, "Failed to create a Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
+
+					updateErrCondition(instance, err)
+					return ctrl.Result{}, err
+				}
+				// Service created successfully - return and requeue
+				return ctrl.Result{Requeue: true}, nil
+			}
+			log.Error(err, "Failed to get Deployment")
+			updateErrCondition(instance, err)
+			return ctrl.Result{}, err
+		}
+	}
+
 	if instance.Status.Conditions == nil {
 		instance.Status.Conditions = status.Conditions{}
 	}
 
-	// Update status.Nodes if needed
-	instance.Status.Completed = isJobComplete(found)
+	if instance.Spec.Method != "download" {
+		instance.Status.Completed = isJobComplete(found)
+	} else if instance.Spec.Method == "download" && isDeploymentReady(foundDeployment) {
+		instance.Status.Completed = isJobComplete(found)
+	}
+
 	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + instance.Namespace + "-" + instance.ObjectMeta.CreationTimestamp.Rfc3339Copy().Format(time.RFC3339) + ".zip"
 	if instance.Status.Completed {
 		log.Info("Job completed")
@@ -344,29 +371,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationBackground))
 		r.Delete(ctx, foundClusterRole)
 		r.Delete(ctx, foundClusterRoleBinding)
-
-		if instance.Spec.Method == "download" {
-			log.Info("Serving up Export Download")
-			foundDeployment := &appsv1.Deployment{}
-			if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
-				if errors.IsNotFound(err) {
-					// Define a new Deployment
-					deployment := r.deploymentGenerate(instance)
-					log.Info("Creating a new Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
-					if err := r.Create(ctx, deployment); err != nil {
-						log.Error(err, "Failed to create a Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
-
-						updateErrCondition(instance, err)
-						return ctrl.Result{}, err
-					}
-					// Service created successfully - return and requeue
-					return ctrl.Result{Requeue: true}, nil
-				}
-				log.Error(err, "Failed to get Deployment")
-				updateErrCondition(instance, err)
-				return ctrl.Result{}, err
-			}
-		}
 
 		// Set reconcile status condition complete
 		instance.Status.Conditions.SetCondition(
@@ -788,6 +792,10 @@ func isJobComplete(job *batchv1.Job) bool {
 
 func defineRoute(route *routev1.Route) string {
 	return route.Spec.Host
+}
+
+func isDeploymentReady(deployment *appsv1.Deployment) bool {
+	return deployment.Status.ReadyReplicas == 1
 }
 
 // SetupWithManager sets up the controller with the Manager.
