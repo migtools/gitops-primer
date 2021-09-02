@@ -11,10 +11,17 @@ make install
 make run
 ```
 
-## Deploying
+## Deploying without OLM
 If you would like to run GitOps primer within your environment. 
 ```
 make deploy
+```
+
+## Deploying with OLM
+If you would like to run GitOps primer within your environment that has OLM
+```
+oc create ns gitops-primer-system
+operator-sdk run bundle quay.io/octo-emerging/gitops-primer-bundle:v0.0.1 --namespace gitops-primer-system
 ```
 
 ## Running
