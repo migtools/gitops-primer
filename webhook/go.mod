@@ -1,6 +1,6 @@
 module github.com/didil/k8s-hello-mutating-webhook/webhook
 
-go 1.15
+go 1.16
 
 require (
 	github.com/cooktheryan/gitops-primer v0.0.0-20210827154636-80d021c74b20
