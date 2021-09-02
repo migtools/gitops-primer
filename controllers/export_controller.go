@@ -204,7 +204,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Check if the Role already exists, if not create a new one
 	foundClusterRole := &rbacv1.ClusterRole{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundClusterRole); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRole); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
@@ -227,7 +227,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Check if the Role already exists, if not create a new one
 	foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundClusterRoleBinding); err != nil {
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRoleBinding); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
