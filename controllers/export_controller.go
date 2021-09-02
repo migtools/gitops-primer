@@ -332,7 +332,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Update status.Nodes if needed
 	instance.Status.Completed = isJobComplete(found)
-	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" +  (t.Format(time.RFC3339) + instance.Namespace + ".zip"
+	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + currentTime() + instance.Namespace + ".zip"
 	if instance.Status.Completed {
 		log.Info("Job completed")
 		log.Info("Cleaning up Primer Resources")
@@ -465,7 +465,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "EXPORT_NAME", Value: m.Name},
 							{Name: "USER", Value: m.Spec.User},
-							{Name: "TIME", Value: (t.Format(time.RFC3339)},
+							{Name: "TIME", Value: currentTime()},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "output", MountPath: "/output"},
@@ -790,9 +790,9 @@ func defineRoute(route *routev1.Route) string {
 	return route.Spec.Host
 }
 
-func currentTime() string{
+func currentTime() string {
 	t := time.Now()
-	return t
+	return t.Format(time.RFC3339)
 }
 
 // SetupWithManager sets up the controller with the Manager.
