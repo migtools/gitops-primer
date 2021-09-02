@@ -330,7 +330,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Update status.Nodes if needed
 	instance.Status.Completed = isJobComplete(found)
-	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + instance.Namespace + ".zip"
+	instance.Status.Route = "https://" + defineRoute(foundRoute) + instance.CreationTimestamp.String() + "/" + instance.Namespace + ".zip"
 	if instance.Status.Completed {
 		log.Info("Job completed")
 		log.Info("Cleaning up Primer Resources")
@@ -463,7 +463,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "EXPORT_NAME", Value: m.Name},
 							{Name: "USER", Value: m.Spec.User},
-							{Name: "TIME", Value: m.CreationTimestamp.Rfc3339Copy().String()},
+							{Name: "TIME", Value: m.CreationTimestamp.String()},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "output", MountPath: "/output"},
