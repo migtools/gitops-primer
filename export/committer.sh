@@ -57,7 +57,7 @@ contexts:
   - name: primer-export-primer@mycluster
     context:
       cluster: mycluster
-      namespace: test
+      namespace: ${NAMESPACE} 
       user: primer-export-primer
 users:
   - name: primer-export-primer
