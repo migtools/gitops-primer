@@ -55,7 +55,7 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 
 func RemoveOwner(u unstructured.Unstructured) (jsonpatch.Patch, error) {
 	patchJSON := fmt.Sprintf(`[
-{ "op": "remove", "path": "/metadata/ownerReferences"}
+{ "op": "remove", "path": "/metadata/ownerReferences/uid"}
 ]`)
 
 	patch, err := jsonpatch.DecodePatch([]byte(patchJSON))
