@@ -11,7 +11,7 @@ import (
 
 var defaultSecretName = []string{"builder-dockercfg-", "builder-token", "default-dockercfg-", "default-token", "deployer-dockercfg-", "deployer-token"}
 var defaultRoleBindingName = []string{"system:"}
-var defaultConfigMapName = []string{"kube-root-ca.crt", "openshift-service-ca.crt"}
+var defaultConfigMapName = []string{"kube-root-ca.crt", "openshift-service-ca.crt", "config-trusted-cabundle"}
 var defaultServiceAccountName = []string{"builder", "deployer", "default"}
 
 func main() {

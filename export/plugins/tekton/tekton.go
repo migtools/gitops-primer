@@ -10,6 +10,7 @@ import (
 )
 
 var defaultRoleBindingName = []string{"pipelines-scc-rolebinding", "edit", "admin"}
+var defaultServiceAccountName = []string{"pipeline-"}
 
 func main() {
 	cli.RunAndExit(cli.NewCustomPlugin("WhiteoutTekton", "v1", nil, Run))
@@ -24,6 +25,8 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 		whiteout = true
 	case "TaskRun":
 		whiteout = true
+	case "ServiceAccount":
+		whiteout = DefaultSA(*u)
 	case "RoleBinding":
 		whiteout = DefaultRoleBinding(*u)
 	}
@@ -44,6 +47,20 @@ func DefaultRoleBinding(u unstructured.Unstructured) bool {
 
 func isDefaultBinding(name string) bool {
 	for _, d := range defaultRoleBindingName {
+		if strings.Contains(name, d) {
+			return true
+		}
+	}
+	return false
+}
+
+func DefaultSA(u unstructured.Unstructured) bool {
+	check := u.GetName()
+	return isDefaultSA(check)
+}
+
+func isDefaultSA(name string) bool {
+	for _, d := range defaultServiceAccountName {
 		if strings.Contains(name, d) {
 			return true
 		}
