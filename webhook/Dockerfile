@@ -12,7 +12,7 @@ RUN go mod download
 ADD . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main main.go
 
-FROM alpine:3.12
+FROM registry.access.redhat.com/ubi8/ubi 
 WORKDIR /app
 COPY --from=builder /app/main ./main
 CMD ["./main"]
