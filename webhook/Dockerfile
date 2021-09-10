@@ -1,9 +1,9 @@
 # Builder Image
-FROM golang:1.16.2 as builder
+FROM registry.access.redhat.com/ubi8/go-toolset:1.15.14 as builder
 
 # create and set working directory
-RUN mkdir -p /app
-WORKDIR /app
+RUN mkdir -p $APP_ROOT/src/github.com/konveyor/gitops-primer/webhook
+WORKDIR $APP_ROOT/src/github.com/konveyor/gitops-primer/webhook
 
 # install dependencies
 ADD go.mod go.mod
@@ -12,7 +12,7 @@ RUN go mod download
 ADD . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main main.go
 
-FROM registry.access.redhat.com/ubi8/ubi 
+FROM registry.access.redhat.com/ubi8/ubi
 WORKDIR /app
-COPY --from=builder /app/main ./main
+COPY --from=builder /opt/app-root/src/github.com/konveyor/gitops-primer/webhook/main ./main
 CMD ["./main"]
