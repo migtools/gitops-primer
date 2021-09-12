@@ -42,6 +42,15 @@ import (
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
 )
 
+const (
+	// DownloaderImage is the image used to serve up the exported zip file
+	DownloaderImage = "quay.io/konveyor/gitops-primer-downloader:latest"
+	// ExportImage is the image that runs crane to extract objects from the cluster
+	ExportImage = "quay.io/konveyor/gitops-primer-export:latest"
+	//OauthImage handles OAuth configuration for accessing the zip file hosted by the downloader deployment
+	OauthImage = "quay.io/openshift/origin-oauth-proxy:4.7"
+)
+
 // ExportReconciler reconciles a Export object
 type ExportReconciler struct {
 	client.Client
@@ -410,7 +419,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
-						Image:           "quay.io/octo-emerging/gitops-primer-export:latest",
+						Image:           ExportImage,
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "REPO", Value: m.Spec.Repo},
@@ -462,7 +471,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
-						Image:           "quay.io/octo-emerging/gitops-primer-export:latest",
+						Image:           ExportImage,
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "METHOD", Value: m.Spec.Method},
@@ -690,7 +699,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Image: "quay.io/octo-emerging/gitops-primer-downloader:latest",
+							Image: DownloaderImage,
 							Name:  "primer-export-" + m.Name,
 							Ports: []corev1.ContainerPort{{
 								ContainerPort: 8080,
@@ -701,7 +710,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 							},
 						},
 						{
-							Image: "quay.io/openshift/origin-oauth-proxy:4.7",
+							Image: OauthImage,
 							Name:  "oauth-proxy",
 							Args: []string{
 								"-provider=openshift",
