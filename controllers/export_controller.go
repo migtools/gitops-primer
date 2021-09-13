@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -415,7 +414,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
-						Image:           ExportImage,
+						Image:           r.ExportImage,
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "REPO", Value: m.Spec.Repo},
@@ -467,7 +466,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
-						Image:           ExportImage,
+						Image:           r.ExportImage,
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "METHOD", Value: m.Spec.Method},
@@ -695,7 +694,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Image: DownloaderImage,
+							Image: r.DownloaderImage,
 							Name:  "primer-export-" + m.Name,
 							Ports: []corev1.ContainerPort{{
 								ContainerPort: 8080,
@@ -706,7 +705,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 							},
 						},
 						{
-							Image: OauthImage,
+							Image: r.OauthImage,
 							Name:  "oauth-proxy",
 							Args: []string{
 								"-provider=openshift",
@@ -807,19 +806,19 @@ func isDeploymentReady(deployment *appsv1.Deployment) bool {
 func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	DownloaderImage := os.Getenv("DownloaderImageName")
 	if DownloaderImage == "" {
-		return fmt.Errorf("no DownloaderImageName environment variable set")
+		DownloaderImage = "quay.io/konveyor/gitops-primer:v0.0.1"
 	}
 	r.DownloaderImage = DownloaderImage
 
 	ExportImage := os.Getenv("ExportImageName")
 	if ExportImage == "" {
-		return fmt.Errorf("no ExportImageName environment variable set")
+		ExportImage = "quay.io/konveyor/gitops-primer-export:latest"
 	}
 	r.ExportImage = ExportImage
 
 	OauthImage := os.Getenv("OauthImageName")
 	if OauthImage == "" {
-		return fmt.Errorf("no OauthImageName environment variable set")
+		OauthImage = "quay.io/openshift/origin-oauth-proxy:4.7"
 	}
 	r.OauthImage = OauthImage
 	return ctrl.NewControllerManagedBy(mgr).
