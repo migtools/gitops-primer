@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"log"
+	"os"
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -45,7 +46,10 @@ import (
 // ExportReconciler reconciles a Export object
 type ExportReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme          *runtime.Scheme
+	DownloaderImage string
+	ExportImage     string
+	OauthImage      string
 }
 
 //+kubebuilder:rbac:groups=primer.gitops.io,resources=exports,verbs=get;list;watch;create;update;patch;delete
@@ -410,7 +414,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
-						Image:           "quay.io/octo-emerging/gitops-primer-export:latest",
+						Image:           r.ExportImage,
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "REPO", Value: m.Spec.Repo},
@@ -462,7 +466,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 					Containers: []corev1.Container{{
 						Name:            m.Name,
 						ImagePullPolicy: "IfNotPresent",
-						Image:           "quay.io/octo-emerging/gitops-primer-export:latest",
+						Image:           r.ExportImage,
 						Command:         []string{"/bin/sh", "-c", "/committer.sh"},
 						Env: []corev1.EnvVar{
 							{Name: "METHOD", Value: m.Spec.Method},
@@ -690,7 +694,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{
 						{
-							Image: "quay.io/octo-emerging/gitops-primer-downloader:latest",
+							Image: r.DownloaderImage,
 							Name:  "primer-export-" + m.Name,
 							Ports: []corev1.ContainerPort{{
 								ContainerPort: 8080,
@@ -701,7 +705,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 							},
 						},
 						{
-							Image: "quay.io/openshift/origin-oauth-proxy:4.7",
+							Image: r.OauthImage,
 							Name:  "oauth-proxy",
 							Args: []string{
 								"-provider=openshift",
@@ -800,6 +804,23 @@ func isDeploymentReady(deployment *appsv1.Deployment) bool {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	DownloaderImage := os.Getenv("DownloaderImageName")
+	if DownloaderImage == "" {
+		DownloaderImage = "quay.io/konveyor/gitops-primer:latest"
+	}
+	r.DownloaderImage = DownloaderImage
+
+	ExportImage := os.Getenv("ExportImageName")
+	if ExportImage == "" {
+		ExportImage = "quay.io/konveyor/gitops-primer-export:latest"
+	}
+	r.ExportImage = ExportImage
+
+	OauthImage := os.Getenv("OauthImageName")
+	if OauthImage == "" {
+		OauthImage = "quay.io/openshift/origin-oauth-proxy:4.7"
+	}
+	r.OauthImage = OauthImage
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&primerv1alpha1.Export{}).
 		Owns(&batchv1.Job{}).

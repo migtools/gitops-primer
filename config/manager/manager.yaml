@@ -31,6 +31,13 @@ spec:
         - --leader-elect
         image: controller:latest
         imagePullPolicy: IfNotPresent
+        env:
+        - name: DownloaderImageName
+          value: quay.io/konveyor/gitops-primer:v0.0.1
+        - name: ExportImageName
+          value: quay.io/konveyor/gitops-primer-export:v0.0.1
+        - name: OauthImageName
+          value: quay.io/openshift/origin-oauth-proxy:4.7
         name: manager
         securityContext:
           allowPrivilegeEscalation: false

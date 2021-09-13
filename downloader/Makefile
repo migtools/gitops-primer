@@ -1,4 +1,4 @@
-IMAGE := quay.io/octo-emerging/gitops-primer-downloader
+IMAGE := quay.io/konveyor/gitops-primer-downloader
 
 BUILDDATE := $(shell date -u '+%Y-%m-%dT%H:%M:%S.%NZ')
 VERSION := $(shell git describe --match 'v[0-9]*' --tags --dirty 2> /dev/null || git describe --always --dirty)
