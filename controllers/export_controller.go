@@ -18,7 +18,9 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -42,19 +44,13 @@ import (
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
 )
 
-const (
-	// DownloaderImage is the image used to serve up the exported zip file
-	DownloaderImage = "quay.io/konveyor/gitops-primer-downloader:latest"
-	// ExportImage is the image that runs crane to extract objects from the cluster
-	ExportImage = "quay.io/konveyor/gitops-primer-export:latest"
-	//OauthImage handles OAuth configuration for accessing the zip file hosted by the downloader deployment
-	OauthImage = "quay.io/openshift/origin-oauth-proxy:4.7"
-)
-
 // ExportReconciler reconciles a Export object
 type ExportReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme          *runtime.Scheme
+	DownloaderImage string
+	ExportImage     string
+	OauthImage      string
 }
 
 //+kubebuilder:rbac:groups=primer.gitops.io,resources=exports,verbs=get;list;watch;create;update;patch;delete
@@ -809,6 +805,23 @@ func isDeploymentReady(deployment *appsv1.Deployment) bool {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	DownloaderImage := os.Getenv("DownloaderImageName")
+	if DownloaderImage == "" {
+		return fmt.Errorf("no DownloaderImageName environment variable set")
+	}
+	r.DownloaderImage = DownloaderImage
+
+	ExportImage := os.Getenv("ExportImageName")
+	if ExportImage == "" {
+		return fmt.Errorf("no ExportImageName environment variable set")
+	}
+	r.ExportImage = ExportImage
+
+	OauthImage := os.Getenv("OauthImageName")
+	if OauthImage == "" {
+		return fmt.Errorf("no OauthImageName environment variable set")
+	}
+	r.OauthImage = OauthImage
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&primerv1alpha1.Export{}).
 		Owns(&batchv1.Job{}).
