@@ -806,7 +806,7 @@ func isDeploymentReady(deployment *appsv1.Deployment) bool {
 func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	DownloaderImage := os.Getenv("DownloaderImageName")
 	if DownloaderImage == "" {
-		DownloaderImage = "quay.io/konveyor/gitops-primer:v0.0.1"
+		DownloaderImage = "quay.io/konveyor/gitops-primer:latest"
 	}
 	r.DownloaderImage = DownloaderImage
 
