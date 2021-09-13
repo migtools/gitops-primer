@@ -248,7 +248,7 @@ spec:
                   value: quay.io/konveyor/gitops-primer-export:v0.0.1
                 - name: OauthImageName
                   value: quay.io/openshift/origin-oauth-proxy:4.7
-                image: quay.io/octo-emerging/gitops-primer:latest
+                image: quay.io/konveyor/gitops-primer:latest
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -289,7 +289,7 @@ spec:
                 app: export-webhook
             spec:
               containers:
-              - image: quay.io/octo-emerging/gitops-primer-webhook:latest
+              - image: quay.io/konveyor/gitops-primer-webhook:v0.0.1
                 imagePullPolicy: IfNotPresent
                 name: export-webhook
                 ports:
