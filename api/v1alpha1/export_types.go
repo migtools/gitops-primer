@@ -33,18 +33,31 @@ const (
 )
 
 type ExportSpec struct {
+	// Method download or git. This defines which process
+	// to use for exporting objects from a cluster
 	Method string `json:"method"`
+	// Branch within the git repository
 	Branch string `json:"branch,omitempty"`
+	// Git repository which will be cloned and updated
 	Repo   string `json:"repo,omitempty"`
+	// Email used to specify the user who performed the git commit
 	Email  string `json:"email,omitempty"`
+	// Predefined secret that contains an SSH key that will
+	// be used for git cloning and pushing
 	Secret string `json:"secret,omitempty"`
+	// Set automatically by the webhook to dictate who will
+	// run the export process
 	User   string `json:"user,omitempty"`
 }
 
 // ExportStatus defines the observed state of Export
 type ExportStatus struct {
+	// Condition set by controller to signify the export completed
+	// successfully and the route is available
 	Completed  bool              `json:"completed,omitempty"`
 	Conditions status.Conditions `json:"conditions,omitempty"`
+	// Route that is defined by the controller to specify the
+	// location of the zip file
 	Route      string            `json:"route,omitempty"`
 }
 
