@@ -21,6 +21,17 @@ metadata:
   name: gitops-primer.v0.0.1
   namespace: placeholder
 spec:
+  relatedImages:
+  - name: downloader
+    image: quay.io/konveyor/gitops-primer-downloader:v0.0.1
+  - name: export
+    image: quay.io/konveyor/gitops-primer-export:v0.0.1
+  - name: webhook
+    image: quay.io/konveyor/gitops-primer-webhook:v0.0.1
+  - name: oauth-proxy
+    image: quay.io/openshift/origin-oauth-proxy:4.7
+  - name: ose-kube-rbac-proxy
+    image: registry.redhat.io/openshift4/ose-kube-rbac-proxy@sha256:6d57bfd91fac9b68eb72d27226bc297472ceb136c996628b845ecc54a48b31cb
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
@@ -243,7 +254,7 @@ spec:
                 - /manager
                 env:
                 - name: DownloaderImageName
-                  value: quay.io/konveyor/gitops-primer:v0.0.1
+                  value: quay.io/konveyor/gitops-primer-downloader:v0.0.1
                 - name: ExportImageName
                   value: quay.io/konveyor/gitops-primer-export:v0.0.1
                 - name: OauthImageName
