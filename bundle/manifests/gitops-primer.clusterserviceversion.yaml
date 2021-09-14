@@ -367,7 +367,7 @@ spec:
   - operator
   links:
   - name: Gitops Primer
-    url: https://gitops-primer.domain
+    url: https://github.com/konveyor/gitops-primer
   maturity: alpha
   provider:
     name: OCTO-ET
