@@ -100,7 +100,8 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	// Check if the Job already exists, if not create a new one
+	// Check if the export job already exists, if not create a new one
+	// based on if its git or download the appropriate func will be called
 	found := &batchv1.Job{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, found); err != nil {
 		if instance.Status.Completed {
@@ -191,7 +192,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, nil
 		}
 		if errors.IsNotFound(err) {
-			// Define a new Secret
+			// Define a new Route
 			appRoute := r.routeGenerate(instance)
 			log.Info("Creating a new Route", "appRoute.Namespace", appRoute.Namespace, "appRoute.Name", appRoute.Name)
 			if err := r.Create(ctx, appRoute); err != nil {
@@ -208,7 +209,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	// Check if the Role already exists, if not create a new one
+	// Check if the Cluster Role already exists, if not create a new one
 	foundClusterRole := &rbacv1.ClusterRole{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRole); err != nil {
 		if instance.Status.Completed {
@@ -223,7 +224,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
-			// Role created successfully - return and requeue
+			// Cluster Role created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get Cluster Role")
@@ -231,14 +232,14 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
-	// Check if the Role already exists, if not create a new one
+	// Check if the Cluster Role Binding already exists, if not create a new one
 	foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRoleBinding); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
 		if errors.IsNotFound(err) {
-			// Define a new Role Binding
+			// Define a new Cluster Role Binding
 			clusterRoleBinding := r.clusterRoleBindingGenerate(instance)
 			log.Info("Creating a new Cluster Role Binding", "clusterRoleBinding.Namespace", clusterRoleBinding.Namespace, "clusterRoleBinding.Name", clusterRoleBinding.Name)
 			if err := r.Create(ctx, clusterRoleBinding); err != nil {
@@ -246,7 +247,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
-			// Role created successfully - return and requeue
+			// Cluster Role Binding created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get Cluster Role Binding")
@@ -254,6 +255,8 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	// Check if method is download then check if network policy exists,
+	// if not create a new one
 	if instance.Spec.Method == "download" {
 		foundNetPol := &networkingv1.NetworkPolicy{}
 		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundNetPol); err != nil {
@@ -330,6 +333,9 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	// Check if deployment already exists, if not create one
+	// Deployment is created only for download to serve up
+	// the zip file that is created during export
 	foundDeployment := &appsv1.Deployment{}
 	if instance.Spec.Method == "download" && isJobComplete(found) {
 		log.Info("Serving up Export Download")
@@ -357,12 +363,15 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		instance.Status.Conditions = status.Conditions{}
 	}
 
+	// Define the circumstances to set the Status Complete
+	// key value pair
 	if instance.Spec.Method != "download" {
 		instance.Status.Completed = isJobComplete(found)
 	} else if instance.Spec.Method == "download" && isDeploymentReady(foundDeployment) {
 		instance.Status.Completed = isJobComplete(found)
 	}
 
+	// Defines the address to access the exported zip file
 	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + instance.Namespace + "-" + instance.ObjectMeta.CreationTimestamp.Rfc3339Copy().Format(time.RFC3339) + ".zip"
 	if instance.Status.Completed {
 		log.Info("Job completed")
@@ -516,7 +525,7 @@ func (r *ExportReconciler) saGenerate(m *primerv1alpha1.Export) *corev1.ServiceA
 			},
 		},
 	}
-	// Service reconcile finished
+	// Service Account reconcile finished
 	ctrl.SetControllerReference(m, serviceAcct, r.Scheme)
 	return serviceAcct
 }
@@ -545,7 +554,7 @@ func (r *ExportReconciler) routeGenerate(m *primerv1alpha1.Export) *routev1.Rout
 		},
 	}
 
-	// Service reconcile finished
+	// Route reconcile finished
 	ctrl.SetControllerReference(m, appRoute, r.Scheme)
 	return appRoute
 }
@@ -566,7 +575,7 @@ func (r *ExportReconciler) secretGenerate(m *primerv1alpha1.Export) *corev1.Secr
 			"session_secret": []byte(random),
 		},
 	}
-	// Service reconcile finished
+	// Secret reconcile finished
 	ctrl.SetControllerReference(m, proxySecret, r.Scheme)
 	return proxySecret
 }
@@ -587,12 +596,13 @@ func (r *ExportReconciler) pvcGenerate(m *primerv1alpha1.Export) *corev1.Persist
 			},
 		},
 	}
-	// Service reconcile finished
+	// PVC reconcile finished
 	ctrl.SetControllerReference(m, persistentVC, r.Scheme)
 	return persistentVC
 }
 
 func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1.ClusterRole {
+	// Define a new clusterRole object
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Namespace + "-" + m.Name,
@@ -607,12 +617,13 @@ func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1
 			},
 		},
 	}
-	// Service reconcile finished
+	// ClusterRole reconcile finished
 	ctrl.SetControllerReference(m, clusterRole, r.Scheme)
 	return clusterRole
 }
 
 func (r *ExportReconciler) clusterRoleBindingGenerate(m *primerv1alpha1.Export) *rbacv1.ClusterRoleBinding {
+	// Define a new ClusterRole binding object
 	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Namespace + "-" + m.Name,
@@ -627,12 +638,13 @@ func (r *ExportReconciler) clusterRoleBindingGenerate(m *primerv1alpha1.Export) 
 			{Kind: "ServiceAccount", Name: "primer-export-" + m.Name, Namespace: m.Namespace},
 		},
 	}
-	// Service reconcile finished
+	// ClusterRole Binding reconcile finished
 	ctrl.SetControllerReference(m, clusterRoleBinding, r.Scheme)
 	return clusterRoleBinding
 }
 
 func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service {
+	// Define a new service and generate secret
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
@@ -665,6 +677,7 @@ func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service
 }
 
 func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.Deployment {
+	// Define the deployment for hosting the export
 	replicas := int32(1)
 	secretMode := int32(420)
 	primerName := "primer-export-" + m.Name
@@ -759,7 +772,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 			},
 		},
 	}
-	// Set Memcached instance as the owner and controller
+	// Deployment reconcile finished
 	ctrl.SetControllerReference(m, dep, r.Scheme)
 	return dep
 }
@@ -790,14 +803,17 @@ func (r *ExportReconciler) netPolGenerate(m *primerv1alpha1.Export) *networkingv
 	return networkPolicy
 }
 
+// Check to see if job is completed
 func isJobComplete(job *batchv1.Job) bool {
 	return job.Status.Succeeded == 1
 }
 
+// Identify route to be used for status
 func defineRoute(route *routev1.Route) string {
 	return route.Spec.Host
 }
 
+// Check to see if deployment is Ready
 func isDeploymentReady(deployment *appsv1.Deployment) bool {
 	return deployment.Status.ReadyReplicas == 1
 }
