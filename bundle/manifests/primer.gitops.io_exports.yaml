@@ -34,16 +34,26 @@ spec:
           spec:
             properties:
               branch:
+                description: Branch within the git repository
                 type: string
               email:
+                description: Email used to specify the user who performed the git
+                  commit
                 type: string
               method:
+                description: Method download or git. This defines which process to
+                  use for exporting objects from a cluster
                 type: string
               repo:
+                description: Git repository which will be cloned and updated
                 type: string
               secret:
+                description: Predefined secret that contains an SSH key that will
+                  be used for git cloning and pushing
                 type: string
               user:
+                description: Set automatically by the webhook to dictate who will
+                  run the export process
                 type: string
             required:
             - method
@@ -52,6 +62,8 @@ spec:
             description: ExportStatus defines the observed state of Export
             properties:
               completed:
+                description: Condition set by controller to signify the export completed
+                  successfully and the route is available
                 type: boolean
               conditions:
                 description: Conditions is a set of Condition instances.
@@ -94,6 +106,8 @@ spec:
                   type: object
                 type: array
               route:
+                description: Route that is defined by the controller to specify the
+                  location of the zip file
                 type: string
             type: object
         type: object
