@@ -6,6 +6,7 @@ metadata:
     capabilities: Basic Install
     categories: OpenShift Optional
     containerImage: quay.io/konveyor/gitops-primer:latest
+    operatorframework.io/suggested-namespace: gitops-primer-system
   name: gitops-primer.v0.0.0
   namespace: gitops-primer-system
 spec:
@@ -27,13 +28,13 @@ spec:
       deployments: null
     strategy: ""
   installModes:
-  - supported: false
+  - supported: true
     type: OwnNamespace
   - supported: false
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: true
+  - supported: false
     type: AllNamespaces
   keywords:
   - gitops
