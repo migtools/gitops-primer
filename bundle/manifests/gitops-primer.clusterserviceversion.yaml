@@ -16,11 +16,11 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    containerImage: quay.io/konveyor/gitops-primer:latest
     categories: OpenShift Optional
     containerImage: quay.io/konveyor/gitops-primer:latest
     operators.operatorframework.io/builder: operator-sdk-v1.10.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+    operatorframework.io/suggested-namespace: gitops-primer-system
   name: gitops-primer.v0.0.1
   namespace: gitops-primer-system
 spec:
@@ -345,13 +345,13 @@ spec:
         serviceAccountName: gitops-primer-controller-manager
     strategy: deployment
   installModes:
-  - supported: false
+  - supported: true
     type: OwnNamespace
   - supported: false
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
-  - supported: true
+  - supported: false
     type: AllNamespaces
   keywords:
   - gitops
