@@ -345,7 +345,7 @@ spec:
         serviceAccountName: gitops-primer-controller-manager
     strategy: deployment
   installModes:
-  - supported: true
+  - supported: false
     type: OwnNamespace
   - supported: false
     type: SingleNamespace
