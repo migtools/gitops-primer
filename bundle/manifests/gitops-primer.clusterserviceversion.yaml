@@ -8,10 +8,10 @@ metadata:
           "apiVersion": "primer.gitops.io/v1alpha1",
           "kind": "Export",
           "metadata": {
-            "name": "export-sample"
+            "name": "primer"
           },
           "spec": {
-            "foo": "bar"
+            "method": "download"
           }
         }
       ]

@@ -1,7 +1,6 @@
 apiVersion: primer.gitops.io/v1alpha1
 kind: Export
 metadata:
-  name: export-sample
+  name: primer
 spec:
-  # Add fields here
-  foo: bar
+  method: download
