@@ -28,6 +28,16 @@ var knativeServerlessServing = schema.GroupKind{
 	Kind:  "ServerlessService",
 }
 
+var knativeAutoscaler = schema.GroupKind{
+	Group: "autoscaling.internal.knative.dev",
+	Kind:  "PodAutoscaler",
+}
+
+var knativeMetrics = schema.GroupKind{
+	Group: "autoscaling.internal.knative.dev",
+	Kind:  "Metric",
+}
+
 func main() {
 	cli.RunAndExit(cli.NewCustomPlugin("Serverlesswhiteout", "v1", nil, Run))
 }
@@ -47,6 +57,12 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 		whiteout = true
 	}
 	if groupKind == knativeServerlessServing {
+		whiteout = true
+	}
+	if groupKind == knativeAutoscaler {
+		whiteout = true
+	}
+	if groupKind == knativeMetrics {
 		whiteout = true
 	}
 	if err != nil {
