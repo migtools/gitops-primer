@@ -14,17 +14,17 @@ var knativeRoute = schema.GroupKind{
 }
 
 var knativeIngress = schema.GroupKind{
-	Group: "networking.internal.knative.dev/v1alpha1",
+	Group: "networking.internal.knative.dev",
 	Kind:  "Ingress",
 }
 
 var knativeRevision = schema.GroupKind{
-	Group: "serving.knative.dev/v1",
+	Group: "serving.knative.dev",
 	Kind:  "Revision",
 }
 
 var knativeServerlessServing = schema.GroupKind{
-	Group: "networking.internal.knative.dev/v1alpha1",
+	Group: "networking.internal.knative.dev",
 	Kind:  "ServerlessService",
 }
 
