@@ -10,7 +10,7 @@ import (
 )
 
 var defaultRoleBindingName = []string{"pipelines-scc-rolebinding", "edit", "admin"}
-var defaultServiceAccountName = []string{"pipeline-"}
+var defaultServiceAccountName = []string{"pipeline-", "pipeline"}
 
 func main() {
 	cli.RunAndExit(cli.NewCustomPlugin("WhiteoutTekton", "v1", nil, Run))
