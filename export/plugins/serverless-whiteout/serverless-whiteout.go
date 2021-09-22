@@ -38,6 +38,11 @@ var knativeMetrics = schema.GroupKind{
 	Kind:  "Metric",
 }
 
+var knativeService = schema.GroupKind{
+	Group: "v1",
+	Kind:  "Service",
+}
+
 func main() {
 	cli.RunAndExit(cli.NewCustomPlugin("Serverlesswhiteout", "v1", nil, Run))
 }
@@ -64,6 +69,12 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 	}
 	if groupKind == knativeMetrics {
 		whiteout = true
+	}
+	if groupKind == knativeService {
+		annotations := u.GetAnnotations()
+		if annotations["networking.internal.knative.dev/serviceType"] == "Private" || annotations["networking.internal.knative.dev/serviceType"] == "Public" {
+			whiteout = true
+		}
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
