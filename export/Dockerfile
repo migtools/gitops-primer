@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8/go-toolset:1.15.14 AS crane-builder
+FROM registry.access.redhat.com/ubi8/go-toolset:1.15.14-10 AS crane-builder
 RUN git clone https://github.com/konveyor/crane $APP_ROOT/src/github.com/konveyor/crane
 WORKDIR $APP_ROOT/src/github.com/konveyor/crane
 ## Workaround go 1.15 builder. Remove this after go-toolset 1.16 is available
