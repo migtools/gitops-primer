@@ -2,6 +2,7 @@ FROM registry.access.redhat.com/ubi8/go-toolset:1.15.14 AS crane-builder
 RUN git clone https://github.com/konveyor/crane $APP_ROOT/src/github.com/konveyor/crane
 WORKDIR $APP_ROOT/src/github.com/konveyor/crane
 ## Workaround go 1.15 builder. Remove this after go-toolset 1.16 is available
+RUN git checkout e3b31f0fccc5ea827fef75dc24b0321853255e6a
 RUN sed -i 's/\"os\"/"os"\n\t"io\/ioutil"/g' cmd/apply/apply.go
 RUN sed -i 's/os\.ReadFile/ioutil.ReadFile/g' cmd/apply/apply.go
 RUN sed -i 's/go 1.16/go 1.15/g' go.mod
