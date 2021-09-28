@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-var defaultConfigMapName = []string{"-global-ca", "-ca"}
+var defaultConfigMapName = []string{"-global-ca", "-ca", "-sys-config"}
 
 func main() {
 	cli.RunAndExit(cli.NewCustomPlugin("WhiteoutBuildsPlugin", "v1", nil, Run))
