@@ -1,6 +1,7 @@
 FROM quay.io/konveyor/builder:latest AS crane-builder
 RUN git clone https://github.com/konveyor/crane $APP_ROOT/src/github.com/konveyor/crane
 WORKDIR $APP_ROOT/src/github.com/konveyor/crane
+RUN git checkout tags/v0.0.1
 RUN go build -o crane main.go
 
 FROM registry.access.redhat.com/ubi8/go-toolset:1.15.14 AS plugin-builder
