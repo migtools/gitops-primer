@@ -326,12 +326,8 @@ github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/konsorten/go-windows-terminal-sequences v1.0.3/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
-github.com/konveyor/crane-lib v0.0.0-20210625191534-a5ead85cb740 h1:LhVcyJV3Zq+bwjbng04qK5xGuByUilbbSVAMLluAw+o=
-github.com/konveyor/crane-lib v0.0.0-20210625191534-a5ead85cb740/go.mod h1:bvMO9AG+cL0NqsxnpGSWKICNZPJIjK98juXjXtTpj6Y=
-github.com/konveyor/crane-lib v0.0.0-20210630183152-1bf12d0d8579 h1:SXUrOYMe3XEg4sJrAR3u6dULhNWm3l3xto9fv3xYKtc=
-github.com/konveyor/crane-lib v0.0.0-20210630183152-1bf12d0d8579/go.mod h1:bvMO9AG+cL0NqsxnpGSWKICNZPJIjK98juXjXtTpj6Y=
-github.com/konveyor/crane-lib v0.0.0-20210720152609-6412163dfd63 h1:hMCJDVzXiOGdK8cSuwoVCmT9meaFkMwp8uYRWKJp51s=
-github.com/konveyor/crane-lib v0.0.0-20210720152609-6412163dfd63/go.mod h1:bvMO9AG+cL0NqsxnpGSWKICNZPJIjK98juXjXtTpj6Y=
+github.com/konveyor/crane-lib v0.0.1 h1:f8bcjwNfPXuDFmG3WcP4OV8Nf6/blkNzaEa5tcAtsx8=
+github.com/konveyor/crane-lib v0.0.1/go.mod h1:7xlMNVE0ZgbAThr9+R7G3zZ88TOD7d4br50URQnv5U8=
 github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515/go.mod h1:+0opPa2QZZtGFBFZlji/RkVcI2GknAs/DXo4wKdlNEc=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
 github.com/kr/pretty v0.2.0/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
@@ -851,8 +847,9 @@ k8s.io/apiextensions-apiserver v0.21.2 h1:+exKMRep4pDrphEafRvpEi79wTnCFMqKf8LBtl
 k8s.io/apiextensions-apiserver v0.21.2/go.mod h1:+Axoz5/l3AYpGLlhJDfcVQzCerVYq3K3CvDMvw6X1RA=
 k8s.io/apimachinery v0.18.4/go.mod h1:OaXp26zu/5J7p0f92ASynJa1pZo06YlV9fG7BoWbCko=
 k8s.io/apimachinery v0.21.1/go.mod h1:jbreFvJo3ov9rj7eWT7+sYiRx+qZuCYXwWT1bcDswPY=
-k8s.io/apimachinery v0.21.2 h1:vezUc/BHqWlQDnZ+XkrpXSmnANSLbpnlpwo0Lhk0gpc=
 k8s.io/apimachinery v0.21.2/go.mod h1:CdTY8fU/BlvAbJ2z/8kBwimGki5Zp8/fbVuLY8gJumM=
+k8s.io/apimachinery v0.21.3 h1:3Ju4nvjCngxxMYby0BimUk+pQHPOQp3eCGChk5kfVII=
+k8s.io/apimachinery v0.21.3/go.mod h1:H/IM+5vH9kZRNJ4l3x/fXP/5bOPJaVP/guptnZPeCFI=
 k8s.io/apiserver v0.18.4/go.mod h1:q+zoFct5ABNnYkGIaGQ3bcbUNdmPyOCoEBcg51LChY8=
 k8s.io/apiserver v0.21.2/go.mod h1:lN4yBoGyiNT7SC1dmNk0ue6a5Wi6O3SWOIw91TsucQw=
 k8s.io/client-go v0.18.4/go.mod h1:f5sXwL4yAZRkAtzOxRWUhA/N8XzGCb+nPZI8PfobZ9g=
@@ -895,8 +892,9 @@ sigs.k8s.io/controller-runtime v0.9.2/go.mod h1:TxzMCHyEUpaeuOiZx/bIdc2T81vfs/aK
 sigs.k8s.io/structured-merge-diff/v3 v3.0.0-20200116222232-67a7b8c61874/go.mod h1:PlARxl6Hbt/+BC80dRLi1qAmnMqwqDg62YvvVkZjemw=
 sigs.k8s.io/structured-merge-diff/v3 v3.0.0/go.mod h1:PlARxl6Hbt/+BC80dRLi1qAmnMqwqDg62YvvVkZjemw=
 sigs.k8s.io/structured-merge-diff/v4 v4.0.2/go.mod h1:bJZC9H9iH24zzfZ/41RGcq60oK1F7G282QMXDPYydCw=
-sigs.k8s.io/structured-merge-diff/v4 v4.1.0 h1:C4r9BgJ98vrKnnVCjwCSXcWjWe0NKcUQkmzDXZXGwH8=
 sigs.k8s.io/structured-merge-diff/v4 v4.1.0/go.mod h1:bJZC9H9iH24zzfZ/41RGcq60oK1F7G282QMXDPYydCw=
+sigs.k8s.io/structured-merge-diff/v4 v4.1.2 h1:Hr/htKFmJEbtMgS/UD0N+gtgctAqz81t3nu+sPzynno=
+sigs.k8s.io/structured-merge-diff/v4 v4.1.2/go.mod h1:j/nl6xW8vLS49O8YvXW1ocPhZawJtm+Yrr7PPRQ0Vg4=
 sigs.k8s.io/yaml v1.1.0/go.mod h1:UJmg0vDUVViEyp3mgSv9WPwZCDxu4rQW1olrI1uml+o=
 sigs.k8s.io/yaml v1.2.0 h1:kr/MCeFWJWTwyaHoR9c8EjH9OumOmoF9YGiZd7lFm/Q=
 sigs.k8s.io/yaml v1.2.0/go.mod h1:yfXDCHCao9+ENCvLSE62v9VSji2MKu5jeNfTrofGhJc=
