@@ -9,10 +9,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-var defaultPullSecrets = []string{"builder-dockercfg-", "default-dockercfg-", "deployer-dockercfg-"}
-
 func main() {
-	cli.RunAndExit(cli.NewCustomPlugin("OpenShiftPlugin", "v1", nil, Run))
+	cli.RunAndExit(cli.NewCustomPlugin("clusterIpRemovalPlugin", "v1", nil, Run))
 }
 
 func Run(u *unstructured.Unstructured, extras map[string]string) (transform.PluginResponse, error) {
