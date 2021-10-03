@@ -12,15 +12,6 @@ ENV GOPATH=$APP_ROOT
 RUN go get -d ./...
 RUN go install ./...
 
-FROM quay.io/konveyor/builder:latest AS crane-lib-plugin-builder
-RUN git clone https://github.com/konveyor/crane-lib $APP_ROOT/src/github.com/konveyor/crane-lib
-WORKDIR $APP_ROOT/src/github.com/konveyor/crane-lib
-RUN git checkout tags/v0.0.1
-ENV GOPATH=$APP_ROOT
-RUN go get -d ./...
-RUN go install ./transform/binary-plugin/examples/openshift/
-
-
 FROM registry.access.redhat.com/ubi8/ubi
 
 RUN yum update -y && \
@@ -35,8 +26,6 @@ RUN yum update -y && \
 ADD committer.sh /
 
 COPY --from=plugin-builder /opt/app-root/bin /opt/transform-plugins
-
-COPY --from=crane-lib-plugin-builder /opt/app-root/bin /opt/transform-plugins
 
 COPY --from=crane-builder /opt/app-root/src/github.com/konveyor/crane/crane /usr/local/bin
 
