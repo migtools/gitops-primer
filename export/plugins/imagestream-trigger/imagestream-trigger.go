@@ -34,6 +34,8 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 	switch u.GetKind() {
 	case "Deployment":
 		patch, err = RemoveFields(*u)
+	case "DeploymentConfig":
+		patch, err = RemoveFields(*u)
 	}
 	if err != nil {
 		return transform.PluginResponse{}, err
