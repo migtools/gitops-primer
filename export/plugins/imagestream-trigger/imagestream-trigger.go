@@ -46,21 +46,27 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 }
 
 func RemoveFields(u unstructured.Unstructured) (jsonpatch.Patch, error) {
-	val := u.GetAnnotations()["image.openshift.io/triggers"]
+	val, ok := u.GetAnnotations()["image.openshift.io/triggers"]
 	var scrub Trigger
-	json.Unmarshal([]byte(val), &scrub)
-	d, err := json.Marshal(scrub)
-	if err != nil {
-		log.Fatal(err)
-	}
-	escaped := strconv.Quote(string(d))
+	var patch jsonpatch.Patch
+	if ok {
+		json.Unmarshal([]byte(val), &scrub)
+		d, err := json.Marshal(scrub)
+		if err != nil {
+			log.Fatal(err)
+		}
+		escaped := strconv.Quote(string(d))
 
-	patchJSON := fmt.Sprintf(`[
-		{"op": "replace", "path": "/metadata/annotations/image.openshift.io~1triggers", "value": %s}
-		]`, escaped)
-	patch, err := jsonpatch.DecodePatch([]byte(patchJSON))
-	if err != nil {
-		return nil, err
+		patchJSON := fmt.Sprintf(`[
+			{"op": "replace", "path": "/metadata/annotations/image.openshift.io~1triggers", "value": %s}
+			]`, escaped)
+		patch, err := jsonpatch.DecodePatch([]byte(patchJSON))
+		if err != nil {
+			return nil, err
+		}
+		return patch, nil
+	} else if !ok {
+		return patch, nil
 	}
 	return patch, nil
 }
