@@ -37,7 +37,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
@@ -839,15 +841,18 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.OauthImage = OauthImage
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&primerv1alpha1.Export{}).
-		Owns(&batchv1.Job{}).
-		Owns(&rbacv1.ClusterRole{}).
-		Owns(&rbacv1.ClusterRoleBinding{}).
-		Owns(&corev1.ServiceAccount{}).
-		Owns(&corev1.PersistentVolumeClaim{}).
-		Owns(&corev1.Service{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Secret{}).
-		Owns(&routev1.Route{}).
-		Owns(&networkingv1.NetworkPolicy{}).
+		Owns(&batchv1.Job{}, builder.OnlyMetadata).
+		Owns(&rbacv1.ClusterRole{}, builder.OnlyMetadata).
+		Owns(&rbacv1.ClusterRoleBinding{}, builder.OnlyMetadata).
+		Owns(&corev1.ServiceAccount{}, builder.OnlyMetadata).
+		Owns(&corev1.PersistentVolumeClaim{}, builder.OnlyMetadata).
+		Owns(&corev1.Service{}, builder.OnlyMetadata).
+		Owns(&appsv1.Deployment{}, builder.OnlyMetadata).
+		Owns(&corev1.Secret{}, builder.OnlyMetadata).
+		Owns(&routev1.Route{}, builder.OnlyMetadata).
+		Owns(&networkingv1.NetworkPolicy{}, builder.OnlyMetadata).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: 5,
+		}).
 		Complete(r)
 }
