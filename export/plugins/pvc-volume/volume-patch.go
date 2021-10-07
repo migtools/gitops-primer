@@ -33,7 +33,10 @@ func Run(u *unstructured.Unstructured, extras map[string]string) (transform.Plug
 
 func UpdatePVC(u unstructured.Unstructured) (jsonpatch.Patch, error) {
 	patchJSON := fmt.Sprintf(`[
-{ "op": "remove", "path": "/spec/volumeName"}
+{ "op": "remove", "path": "/spec/volumeName"},
+{ "op": "remove", "path": "/metadata/annotations/volume.kubernetes.io~1selected-node"},
+{ "op": "remove", "path": "/metadata/annotations/pv.kubernetes.io~1bind-complete"},
+{ "op": "remove", "path": "/metadata/annotations/pv.kubernetes.io~1bound-by-controller"}
 ]`)
 
 	patch, err := jsonpatch.DecodePatch([]byte(patchJSON))
