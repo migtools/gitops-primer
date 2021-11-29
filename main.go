@@ -25,10 +25,17 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	routev1 "github.com/openshift/api/route/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -66,13 +73,48 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	newCacheFunc := cache.BuilderWithOptions(cache.Options{
+		Scheme: scheme,
+		SelectorsByObject: cache.SelectorsByObject{
+			&batchv1.Job{}: {
+				Label: labels.SelectorFromSet(labels.Set{"openshift.gitops.primer": "true"}),
+			},
+			&rbacv1.ClusterRole{}: {
+				Label: labels.SelectorFromSet(labels.Set{"openshift.gitops.primer": "true"}),
+			},
+			&rbacv1.ClusterRoleBinding{}: {
+				Label: labels.SelectorFromSet(labels.Set{"openshift.gitops.primer": "true"}),
+			},
+			&corev1.ServiceAccount{}: {
+				Label: labels.SelectorFromSet(labels.Set{"openshift.gitops.primer": "true"}),
+			},
+			&corev1.PersistentVolumeClaim{}: {
+				Label: labels.SelectorFromSet(labels.Set{"openshift.gitops.primer": "true"}),
+			},
+			&corev1.Service{}: {
+				Label: labels.SelectorFromSet(labels.Set{"openshift.gitops.primer": "true"}),
+			},
+			&corev1.Secret{}: {
+				Label: labels.SelectorFromSet(labels.Set{"openshift.gitops.primer": "true"}),
+			},
+			&appsv1.Deployment{}: {
+				Label: labels.SelectorFromSet(labels.Set{"openshift.gitops.primer": "true"}),
+			},
+			&routev1.Route{}: {
+				Label: labels.SelectorFromSet(labels.Set{"openshift.gitops.primer": "true"}),
+			},
+			&networkingv1.NetworkPolicy{}: {
+				Label: labels.SelectorFromSet(labels.Set{"openshift.gitops.primer": "true"}),
+			},
+		},
+	})
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
 		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "86f835c3.example.com",
+		NewCache:               newCacheFunc,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

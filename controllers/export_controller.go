@@ -37,10 +37,16 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
+)
+
+const (
+	gitopsPrimerLabel = "openshift.gitops.primer"
 )
 
 // ExportReconciler reconciles a Export object
@@ -414,6 +420,9 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
+			},
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
@@ -466,6 +475,9 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
+			},
 		},
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
@@ -523,6 +535,9 @@ func (r *ExportReconciler) saGenerate(m *primerv1alpha1.Export) *corev1.ServiceA
 			Annotations: map[string]string{
 				oauthRedirectAnnotation: oauthRedirectValue,
 			},
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
+			},
 		},
 	}
 	// Service Account reconcile finished
@@ -536,6 +551,9 @@ func (r *ExportReconciler) routeGenerate(m *primerv1alpha1.Export) *routev1.Rout
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
+			},
 		},
 		Spec: routev1.RouteSpec{
 			To: routev1.RouteTargetReference{
@@ -569,6 +587,9 @@ func (r *ExportReconciler) secretGenerate(m *primerv1alpha1.Export) *corev1.Secr
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
+			},
 		},
 		Type: "Opaque",
 		Data: map[string][]byte{
@@ -586,6 +607,9 @@ func (r *ExportReconciler) pvcGenerate(m *primerv1alpha1.Export) *corev1.Persist
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
+			},
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
 			AccessModes: []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
@@ -607,6 +631,9 @@ func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Namespace + "-" + m.Name,
 			Namespace: m.Namespace,
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
+			},
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -628,6 +655,9 @@ func (r *ExportReconciler) clusterRoleBindingGenerate(m *primerv1alpha1.Export) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Namespace + "-" + m.Name,
 			Namespace: m.Namespace,
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
+			},
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -651,6 +681,9 @@ func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service
 			Namespace: m.Namespace,
 			Annotations: map[string]string{
 				"service.alpha.openshift.io/serving-cert-secret-name": "primer-export-" + m.Name + "-tls",
+			},
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -686,6 +719,9 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
+			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
@@ -702,6 +738,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 						"app.kubernetes.io/name":      "primer-export-" + m.Name,
 						"app.kubernetes.io/component": "primer-export-" + m.Name,
 						"app.kubernetes.io/part-of":   "primer-export",
+						gitopsPrimerLabel:             "true",
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -783,6 +820,9 @@ func (r *ExportReconciler) netPolGenerate(m *primerv1alpha1.Export) *networkingv
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
 			Namespace: m.Namespace,
+			Labels: map[string]string{
+				gitopsPrimerLabel: "true",
+			},
 		},
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{MatchLabels: map[string]string{"app.kubernetes.io/name": "primer-export-" + m.Name, "app.kubernetes.io/component": "primer-export-" + m.Name, "app.kubernetes.io/part-of": "primer-export-" + m.Name}},
@@ -839,15 +879,18 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.OauthImage = OauthImage
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&primerv1alpha1.Export{}).
-		Owns(&batchv1.Job{}).
-		Owns(&rbacv1.ClusterRole{}).
-		Owns(&rbacv1.ClusterRoleBinding{}).
-		Owns(&corev1.ServiceAccount{}).
-		Owns(&corev1.PersistentVolumeClaim{}).
-		Owns(&corev1.Service{}).
-		Owns(&appsv1.Deployment{}).
-		Owns(&corev1.Secret{}).
-		Owns(&routev1.Route{}).
-		Owns(&networkingv1.NetworkPolicy{}).
+		Owns(&batchv1.Job{}, builder.OnlyMetadata).
+		Owns(&rbacv1.ClusterRole{}, builder.OnlyMetadata).
+		Owns(&rbacv1.ClusterRoleBinding{}, builder.OnlyMetadata).
+		Owns(&corev1.ServiceAccount{}, builder.OnlyMetadata).
+		Owns(&corev1.PersistentVolumeClaim{}, builder.OnlyMetadata).
+		Owns(&corev1.Service{}, builder.OnlyMetadata).
+		Owns(&appsv1.Deployment{}, builder.OnlyMetadata).
+		Owns(&corev1.Secret{}, builder.OnlyMetadata).
+		Owns(&routev1.Route{}, builder.OnlyMetadata).
+		Owns(&networkingv1.NetworkPolicy{}, builder.OnlyMetadata).
+		WithOptions(controller.Options{
+			MaxConcurrentReconciles: 5,
+		}).
 		Complete(r)
 }
