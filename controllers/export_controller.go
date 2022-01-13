@@ -138,8 +138,14 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				return ctrl.Result{Requeue: true}, nil
 			}
 		}
+		if isJobComplete(foundJob) {
+			log.Info("Job is completed")
+			r.Delete(ctx, foundJob, client.PropagationPolicy(metav1.DeletePropagationBackground))
+			return ctrl.Result{}, nil
+		}
 		log.Error(err, "Failed to get Job")
 		updateErrCondition(instance, err)
+		instance.Status.JobSuccess = true
 		return ctrl.Result{}, err
 	}
 
@@ -343,7 +349,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Deployment is created only for download to serve up
 	// the zip file that is created during export
 	foundDeployment := &appsv1.Deployment{}
-	if instance.Spec.Method == "download" && isJobComplete(foundJob) {
+	if instance.Spec.Method == "download" && instance.Status.JobSuccess {
 		log.Info("Serving up Export Download")
 		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
 			if errors.IsNotFound(err) {
