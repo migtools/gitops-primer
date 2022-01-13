@@ -374,7 +374,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if instance.Spec.Method != "download" {
 		instance.Status.Completed = isJobComplete(foundJob)
 	} else if instance.Spec.Method == "download" && isDeploymentReady(foundDeployment) {
-		instance.Status.Completed = true
+		instance.Status.Completed = isJobComplete(foundJob)
 	}
 
 	// Defines the address to access the exported zip file
@@ -387,9 +387,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
-		r.Delete(ctx, foundJob, client.PropagationPolicy(metav1.DeletePropagationBackground))
-		r.Delete(ctx, foundClusterRole)
-		r.Delete(ctx, foundClusterRoleBinding)
 
 		// Set reconcile status condition complete
 		instance.Status.Conditions.SetCondition(
