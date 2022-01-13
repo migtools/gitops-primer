@@ -108,8 +108,8 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Check if the export job already exists, if not create a new one
 	// based on if its git or download the appropriate func will be called
-	found := &batchv1.Job{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, found); err != nil {
+	foundJob := &batchv1.Job{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundJob); err != nil {
 		if instance.Status.Completed {
 			return ctrl.Result{}, nil
 		}
@@ -343,7 +343,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Deployment is created only for download to serve up
 	// the zip file that is created during export
 	foundDeployment := &appsv1.Deployment{}
-	if instance.Spec.Method == "download" && isJobComplete(found) {
+	if instance.Spec.Method == "download" && instance.Status.JobSuccess {
 		log.Info("Serving up Export Download")
 		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
 			if errors.IsNotFound(err) {
@@ -369,12 +369,17 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		instance.Status.Conditions = status.Conditions{}
 	}
 
+	if isJobComplete(foundJob) {
+		instance.Status.JobSuccess = isJobComplete(foundJob)
+		r.Delete(ctx, foundJob, client.PropagationPolicy(metav1.DeletePropagationBackground))
+	}
+
 	// Define the circumstances to set the Status Complete
 	// key value pair
 	if instance.Spec.Method != "download" {
-		instance.Status.Completed = isJobComplete(found)
+		instance.Status.Completed = isJobComplete(foundJob)
 	} else if instance.Spec.Method == "download" && isDeploymentReady(foundDeployment) {
-		instance.Status.Completed = isJobComplete(found)
+		instance.Status.Completed = true
 	}
 
 	// Defines the address to access the exported zip file
@@ -387,7 +392,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
-		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationBackground))
 		r.Delete(ctx, foundClusterRole)
 		r.Delete(ctx, foundClusterRoleBinding)
 
