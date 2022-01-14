@@ -37,6 +37,22 @@ func (app *App) HandleMutate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if export.Spec.User != "" {
+		response := &admissionv1.AdmissionReview{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "AdmissionReview",
+				APIVersion: "admission.k8s.io/v1",
+			},
+			Response: &admissionv1.AdmissionResponse{
+				UID:     admissionReview.Request.UID,
+				Allowed: true,
+			},
+		}
+		jsonOk(w, &response)
+		return
+
+	}
+
 	userName, err := json.Marshal(&ar.Username)
 	if err != nil {
 		app.HandleError(w, r, fmt.Errorf("marshall user: %v", err))
