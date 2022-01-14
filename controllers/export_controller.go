@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrllog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	primerv1alpha1 "github.com/cooktheryan/gitops-primer/api/v1alpha1"
@@ -47,6 +48,7 @@ import (
 
 const (
 	gitopsPrimerLabel = "openshift.gitops.primer"
+	finalizer         = "openshift.gitops.primer"
 )
 
 // ExportReconciler reconciles a Export object
@@ -102,6 +104,54 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 		// Error reading the object - requeue the request.
 		log.Error(err, "Failed to get Export")
+		updateErrCondition(instance, err)
+		return ctrl.Result{}, err
+	}
+
+	// Add finalizer for this CR
+	if !controllerutil.ContainsFinalizer(instance, finalizer) {
+		controllerutil.AddFinalizer(instance, finalizer)
+		err := r.Update(ctx, instance)
+		if err != nil {
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if instance.DeletionTimestamp != nil {
+		// clean up
+		err := r.CleanUpOpjects(ctx, instance)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		controllerutil.RemoveFinalizer(instance, finalizer)
+		err = r.Update(ctx, instance)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+
+	foundVolume := &corev1.PersistentVolumeClaim{}
+	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundVolume); err != nil {
+		if instance.Status.Completed {
+			return ctrl.Result{}, nil
+		}
+		if errors.IsNotFound(err) {
+			// Define a new PVC
+			persistentVC := r.pvcGenerate(instance)
+			log.Info("Creating a new PVC", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
+			if err := r.Create(ctx, persistentVC); err != nil {
+				log.Error(err, "Failed to create a PVC", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
+
+				updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			// Persistent Volume created successfully - return and requeue
+			return ctrl.Result{Requeue: true}, nil
+		}
+		log.Error(err, "Failed to get PVC")
 		updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
@@ -288,29 +338,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Check if the PVC already exists, if not create a new one
-	foundVolume := &corev1.PersistentVolumeClaim{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundVolume); err != nil {
-		if instance.Status.Completed {
-			return ctrl.Result{}, nil
-		}
-		if errors.IsNotFound(err) {
-			// Define a new PVC
-			persistentVC := r.pvcGenerate(instance)
-			log.Info("Creating a new PVC", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
-			if err := r.Create(ctx, persistentVC); err != nil {
-				log.Error(err, "Failed to create a PVC", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
-
-				updateErrCondition(instance, err)
-				return ctrl.Result{}, err
-			}
-			// Persistent Volume created successfully - return and requeue
-			return ctrl.Result{Requeue: true}, nil
-		}
-		log.Error(err, "Failed to get PVC")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
-	}
-
 	if instance.Status.Conditions == nil {
 		instance.Status.Conditions = status.Conditions{}
 	}
@@ -387,7 +414,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
-		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationBackground))
+		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationForeground))
 		r.Delete(ctx, foundClusterRole)
 		r.Delete(ctx, foundClusterRoleBinding)
 
@@ -401,6 +428,65 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			})
 	}
 	return ctrl.Result{}, nil
+}
+
+func (r *ExportReconciler) CleanUpOpjects(ctx context.Context, instance *primerv1alpha1.Export) error {
+	// Delete all the objects that we created to make sure that things are removed.
+	err := r.Delete(ctx, &batchv1.Job{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}}, client.PropagationPolicy(metav1.DeletePropagationBackground))
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+
+	err = r.Delete(ctx, &corev1.ServiceAccount{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}})
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+
+	err = r.Delete(ctx, &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}})
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+
+	err = r.Delete(ctx, &routev1.Route{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}})
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+
+	err = r.Delete(ctx, &rbacv1.ClusterRole{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}})
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+	err = r.Delete(ctx, &rbacv1.ClusterRoleBinding{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}})
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+
+	err = r.Delete(ctx, &networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}})
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+
+	err = r.Delete(ctx, &networkingv1.NetworkPolicy{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}})
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+
+	err = r.Delete(ctx, &corev1.PersistentVolumeClaim{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}})
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+
+	err = r.Delete(ctx, &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}})
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+
+	err = r.Delete(ctx, &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}})
+	if err != nil && !(errors.IsGone(err) || errors.IsNotFound(err)) {
+		return err
+	}
+
+	return nil
 }
 
 func updateErrCondition(instance *primerv1alpha1.Export, err error) {
@@ -629,8 +715,7 @@ func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1
 	// Define a new clusterRole object
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-export-" + m.Namespace + "-" + m.Name,
-			Namespace: m.Namespace,
+			Name: "primer-export-" + m.Namespace + "-" + m.Name,
 			Labels: map[string]string{
 				gitopsPrimerLabel: "true",
 			},
@@ -645,7 +730,6 @@ func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1
 		},
 	}
 	// ClusterRole reconcile finished
-	ctrl.SetControllerReference(m, clusterRole, r.Scheme)
 	return clusterRole
 }
 
@@ -653,8 +737,7 @@ func (r *ExportReconciler) clusterRoleBindingGenerate(m *primerv1alpha1.Export) 
 	// Define a new ClusterRole binding object
 	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "primer-export-" + m.Namespace + "-" + m.Name,
-			Namespace: m.Namespace,
+			Name: "primer-export-" + m.Namespace + "-" + m.Name,
 			Labels: map[string]string{
 				gitopsPrimerLabel: "true",
 			},
@@ -669,7 +752,6 @@ func (r *ExportReconciler) clusterRoleBindingGenerate(m *primerv1alpha1.Export) 
 		},
 	}
 	// ClusterRole Binding reconcile finished
-	ctrl.SetControllerReference(m, clusterRoleBinding, r.Scheme)
 	return clusterRoleBinding
 }
 
@@ -880,8 +962,6 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&primerv1alpha1.Export{}).
 		Owns(&batchv1.Job{}, builder.OnlyMetadata).
-		Owns(&rbacv1.ClusterRole{}, builder.OnlyMetadata).
-		Owns(&rbacv1.ClusterRoleBinding{}, builder.OnlyMetadata).
 		Owns(&corev1.ServiceAccount{}, builder.OnlyMetadata).
 		Owns(&corev1.PersistentVolumeClaim{}, builder.OnlyMetadata).
 		Owns(&corev1.Service{}, builder.OnlyMetadata).
