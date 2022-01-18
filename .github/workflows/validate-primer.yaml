@@ -126,7 +126,7 @@ jobs:
 
   build-export:
     name: Build-export
-    needs: [build-crane, build-plugins]
+    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader]
     runs-on: ubuntu-20.04
 
     steps:
@@ -312,7 +312,7 @@ jobs:
           github.ref == 'refs/heads/main'
         run: |
           echo "Pushing to ${{ env.TAG }}"
-          docker push "${BUNDLE_IMAGE}:${{ env.TAG }}""
+          docker push "${BUNDLE_IMAGE}:${{ env.TAG }}"
 
   push-downloader:
     name: Push downloader image to registry
@@ -348,7 +348,7 @@ jobs:
           (github.event_name == 'push' || github.event_name == 'schedule') &&
           github.ref == 'refs/heads/main'
         run: |
-          docker tag "${DOWNLOADER_IMAGE}" "${DOWNLOADER_IMAGE}:${{ env.TAG }}""
+          docker tag "${DOWNLOADER_IMAGE}" "${DOWNLOADER_IMAGE}:${{ env.TAG }}"
           docker push "${DOWNLOADER_IMAGE}:${{ env.TAG }}"
 
   push-webhook:
@@ -386,4 +386,4 @@ jobs:
           github.ref == 'refs/heads/main'
         run: |
           docker tag "${WEBHOOK_IMAGE}" "${WEBHOOK_IMAGE}:${{ env.TAG }}"
-          docker push "${WEBHOOK_IMAGE}:${{ env.TAG }}""
+          docker push "${WEBHOOK_IMAGE}:${{ env.TAG }}"
