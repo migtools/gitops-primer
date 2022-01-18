@@ -413,7 +413,7 @@ jobs:
       - name: Import container image
         run: |
           docker load -i /tmp/bundle.tar
-          docker inspect ${BUNDLE_IMAGE}:${TAG}
+          docker inspect ${BUNDLE_IMAGE}
           
       - name: Login to registry
         # If the registry server is specified in the image name, we use that.
