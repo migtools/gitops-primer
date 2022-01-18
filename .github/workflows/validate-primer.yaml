@@ -198,120 +198,9 @@ jobs:
           name: primer-webhook
           path: /tmp/webhook.tar
 
-  e2e:
-    name: End-to-end
-    needs: [build-operator, build-export, build-plugins, build-downloader, build-webhook]
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        KUBERNETES_VERSIONS: ["1.20.2"]
-    env:
-      KUBECONFIG: /tmp/kubeconfig
-      KUBERNETES_VERSION: ${{ matrix.KUBERNETES_VERSIONS }}
-      KIND_VERSION: "0.11.0"
-    steps:
-      - name: Get kind
-        run: |
-          curl -L -o kind https://github.com/kubernetes-sigs/kind/releases/download/v${KIND_VERSION}/kind-linux-amd64
-          sudo install ./kind /usr/local/bin && rm kind
-
-      - name: Create k8s Kind Cluster
-        run: kind create cluster --kubeconfig /tmp/kubeconfig
-
-      - name: Checkout source
-        uses: actions/checkout@v2
-
-      - name: Load operator container artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: primer-operator
-          path: /tmp
-
-      - name: Import container image into cluster
-        run: |
-          docker load -i /tmp/operator.tar
-          docker inspect ${OPERATOR_IMAGE}
-          docker history ${OPERATOR_IMAGE}
-          kind load docker-image "${OPERATOR_IMAGE}"
-          sleep 10
-          kind load docker-image "${OPERATOR_IMAGE}"
-
-
-      - name: Load export container artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: export-image
-          path: /tmp
-
-      - name: Import container image into cluster
-        run: |
-          docker load -i /tmp/export.tar
-          docker inspect ${EXPORT_IMAGE}
-          docker history ${EXPORT_IMAGE}
-          kind load docker-image "${EXPORT_IMAGE}:latest"
-          sleep 10
-          kind load docker-image "${EXPORT_IMAGE}:latest"
-
-      - name: Load export container artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: primer-downloader
-          path: /tmp
-
-      - name: Import container image into cluster
-        run: |
-          docker load -i /tmp/downloader.tar
-          docker inspect ${DOWNLOADER_IMAGE}
-          docker history ${DOWNLOADER_IMAGE}
-          kind load docker-image "${DOWNLOADER_IMAGE}:latest"
-          sleep 10
-          kind load docker-image "${DOWNLOADER_IMAGE}:latest"
-
-
-      - name: Load export container artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: primer-webhook
-          path: /tmp
-
-      - name: Import container image into cluster
-        run: |
-          docker load -i /tmp/webhook.tar
-          docker inspect ${WEBHOOK_IMAGE}
-          docker history ${WEBHOOK_IMAGE}
-          kind load docker-image "${WEBHOOK_IMAGE}:latest"
-          sleep 10
-          kind load docker-image "${WEBHOOK_IMAGE}:latest"
-
-
-      - name: Start operator
-        run: |
-          kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1.5.3/cert-manager.yaml
-          kubectl create -f hack/router-crd.yaml
-          make deploy
-
-      - name: hack
-        run: |
-          kubectl create ns test
-          echo "${{ secrets.KEY }}" > /tmp/file 
-          kubectl create secret generic secret-key --from-file=id_rsa=/tmp/file -n test
-
-#      - name: Run e2e test
-#        run: |
-#          make test-e2e
-
-  e2e-success:
-    name: Successful e2e tests
-    needs: [e2e]
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Success
-        run: echo "Previous steps were successful"
-
   push-operator:
     name: Push operator container to registry
-    needs: e2e-success
+    needs: build-export
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -354,7 +243,7 @@ jobs:
 
   push-export:
     name: Push export container to registry
-    needs: e2e-success
+    needs: build-export
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -397,7 +286,7 @@ jobs:
 
   push-bundle:
     name: Push bundle container to registry
-    needs: e2e-success
+    needs: build-export
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -413,7 +302,7 @@ jobs:
       - name: Import container image
         run: |
           docker load -i /tmp/bundle.tar
-          docker inspect ${BUNDLE_IMAGE}
+          docker inspect ${BUNDLE_IMAGE}:%{TAG}
           
       - name: Login to registry
         # If the registry server is specified in the image name, we use that.
@@ -435,7 +324,7 @@ jobs:
 
   push-downloader:
     name: Push downloader image to registry
-    needs: e2e-success
+    needs: build-export
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -475,7 +364,7 @@ jobs:
 
   push-webhook:
     name: Push webhook image to registry
-    needs: e2e-success
+    needs: build-export
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -512,4 +401,3 @@ jobs:
           echo "Pushing to $TAG"
           docker tag "${WEBHOOK_IMAGE}" "${WEBHOOK_IMAGE}:${TAG}"
           docker push "${WEBHOOK_IMAGE}:${TAG}"
-                                                           
