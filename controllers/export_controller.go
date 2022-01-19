@@ -368,16 +368,20 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	if isJobComplete(found) {
 		instance.Status.Extracted = isJobComplete(found)
+		if err := r.Status().Update(ctx, instance); err != nil {
+			log.Error(err, "Failed to update Export status")
+			updateErrCondition(instance, err)
+			return ctrl.Result{}, err
+		}
+		log.Info("Cleaning up Job")
 		r.Delete(ctx, foundClusterRole)
 		r.Delete(ctx, foundClusterRoleBinding)
 		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationForeground))
-		log.Info("instance.Status.Extracted", instance.Status.Extracted)
 	}
 
 	if instance.Status.Extracted {
 		log.Info("Items extracted successfully")
-		log.Info("Cleaning up Job")
-		log.Info("instance.Status.Extracted", instance.Status.Extracted)
+		instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + instance.Namespace + "-" + instance.ObjectMeta.CreationTimestamp.Rfc3339Copy().Format(time.RFC3339) + ".zip"
 		if err := r.Status().Update(ctx, instance); err != nil {
 			log.Error(err, "Failed to update Export status")
 			updateErrCondition(instance, err)
@@ -411,38 +415,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 	}
 
-	if instance.Status.Conditions == nil {
-		instance.Status.Conditions = status.Conditions{}
-	}
-
-	// Define the circumstances to set the Status Complete
-	// key value pair
-	if instance.Spec.Method != "download" {
-		instance.Status.Completed = true
-	} else if instance.Spec.Method == "download" {
+	if instance.Spec.Method == "download" && instance.Status.Extracted && isDeploymentReady(foundDeployment) {
+		log.Info("Items extracted successfully")
 		instance.Status.Completed = isDeploymentReady(foundDeployment)
-	}
-
-	// Defines the address to access the exported zip file
-	instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + instance.Namespace + "-" + instance.ObjectMeta.CreationTimestamp.Rfc3339Copy().Format(time.RFC3339) + ".zip"
-	if instance.Status.Completed {
-		log.Info("Job completed")
-		log.Info("Cleaning up Primer Resources")
 		if err := r.Status().Update(ctx, instance); err != nil {
 			log.Error(err, "Failed to update Export status")
 			updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
-
-		// Set reconcile status condition complete
-		instance.Status.Conditions.SetCondition(
-			status.Condition{
-				Type:    primerv1alpha1.ConditionReconciled,
-				Status:  corev1.ConditionTrue,
-				Reason:  primerv1alpha1.ReconciledReasonComplete,
-				Message: "Reconcile complete",
-			})
+	} else {
+		log.Info("Deployment is not ready")
 	}
+
 	return ctrl.Result{}, nil
 }
 
@@ -951,7 +935,6 @@ func defineRoute(route *routev1.Route) string {
 	return route.Spec.Host
 }
 
-// Check to see if deployment is Ready
 func isDeploymentReady(deployment *appsv1.Deployment) bool {
 	return deployment.Status.ReadyReplicas == 1
 }
