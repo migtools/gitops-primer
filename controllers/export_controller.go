@@ -403,8 +403,12 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			r.updateErrCondition(instance, err)
 		}
 	}
+	if !isDeploymentReady(foundDeployment) {
+		log.Info("Deployment not ready")
+		return ctrl.Result{RequeueAfter: 5}, nil
+	}
 
-	if instance.Spec.Method == "download" && instance.Status.Extracted && isDeploymentReady(foundDeployment) {
+	if instance.Spec.Method == "download" && isDeploymentReady(foundDeployment) {
 		log.Info("Items extracted successfully")
 		instance.Status.Completed = isDeploymentReady(foundDeployment)
 		if err := r.Status().Update(ctx, instance); err != nil {
