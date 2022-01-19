@@ -39,7 +39,7 @@ IMAGE_TAG_BASE ?= quay.io/konveyor/gitops-primer
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
-IMG ?= quay.io/konveyor/gitops-primer:latest
+IMG ?= quay.io/konveyor/gitops-primer:v0.0.4
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 

@@ -934,19 +934,19 @@ func isDeploymentReady(deployment *appsv1.Deployment) bool {
 func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	DownloaderImage := os.Getenv("DownloaderImageName")
 	if DownloaderImage == "" {
-		DownloaderImage = "quay.io/konveyor/gitops-primer:latest"
+		DownloaderImage = "quay.io/konveyor/gitops-primer:v0.0.4"
 	}
 	r.DownloaderImage = DownloaderImage
 
 	ExportImage := os.Getenv("ExportImageName")
 	if ExportImage == "" {
-		ExportImage = "quay.io/konveyor/gitops-primer-export:latest"
+		ExportImage = "quay.io/konveyor/gitops-primer-export:v0.0.4"
 	}
 	r.ExportImage = ExportImage
 
 	OauthImage := os.Getenv("OauthImageName")
 	if OauthImage == "" {
-		OauthImage = "quay.io/openshift/origin-oauth-proxy:4.7"
+		OauthImage = "quay.io/openshift/origin-oauth-proxy:4.9"
 	}
 	r.OauthImage = OauthImage
 	return ctrl.NewControllerManagedBy(mgr).
