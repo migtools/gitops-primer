@@ -160,7 +160,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// based on if its git or download the appropriate func will be called
 	found := &batchv1.Job{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, found); err != nil {
-		if instance.Status.Completed {
+		if instance.Status.Completed || instance.Status.Extracted {
 			return ctrl.Result{}, nil
 		}
 		if errors.IsNotFound(err) {
@@ -268,7 +268,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Check if the Cluster Role already exists, if not create a new one
 	foundClusterRole := &rbacv1.ClusterRole{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRole); err != nil {
-		if instance.Status.Completed {
+		if instance.Status.Completed || instance.Status.Extracted {
 			return ctrl.Result{}, nil
 		}
 		if errors.IsNotFound(err) {
@@ -291,7 +291,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Check if the Cluster Role Binding already exists, if not create a new one
 	foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRoleBinding); err != nil {
-		if instance.Status.Completed {
+		if instance.Status.Completed || instance.Status.Extracted {
 			return ctrl.Result{}, nil
 		}
 		if errors.IsNotFound(err) {
@@ -366,11 +366,28 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	if isJobComplete(found) {
+		instance.Status.Extracted = isJobComplete(found)
+		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationForeground))
+		r.Delete(ctx, foundClusterRole)
+		r.Delete(ctx, foundClusterRoleBinding)
+	}
+
+	if instance.Status.Extracted {
+		log.Info("Items extracted successfully")
+		log.Info("Cleaning up Job")
+		if err := r.Status().Update(ctx, instance); err != nil {
+			log.Error(err, "Failed to update Export status")
+			updateErrCondition(instance, err)
+			return ctrl.Result{}, err
+		}
+	}
+
 	// Check if deployment already exists, if not create one
 	// Deployment is created only for download to serve up
 	// the zip file that is created during export
 	foundDeployment := &appsv1.Deployment{}
-	if instance.Spec.Method == "download" && isJobComplete(found) {
+	if instance.Spec.Method == "download" && instance.Status.Extracted {
 		log.Info("Serving up Export Download")
 		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
 			if errors.IsNotFound(err) {
@@ -399,9 +416,9 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Define the circumstances to set the Status Complete
 	// key value pair
 	if instance.Spec.Method != "download" {
-		instance.Status.Completed = isJobComplete(found)
+		instance.Status.Completed = true
 	} else if instance.Spec.Method == "download" && isDeploymentReady(foundDeployment) {
-		instance.Status.Completed = isJobComplete(found)
+		instance.Status.Completed = true
 	}
 
 	// Defines the address to access the exported zip file
@@ -414,9 +431,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
-		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationForeground))
-		r.Delete(ctx, foundClusterRole)
-		r.Delete(ctx, foundClusterRoleBinding)
 
 		// Set reconcile status condition complete
 		instance.Status.Conditions.SetCondition(
