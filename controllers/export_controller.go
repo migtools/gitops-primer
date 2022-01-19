@@ -88,7 +88,6 @@ type ExportReconciler struct {
 
 func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
-	log.Info("Starting to process")
 	// Fetch the Export instance
 	instance := &primerv1alpha1.Export{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
@@ -404,12 +403,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			log.Error(err, "Failed to get Deployment")
 			r.updateErrCondition(instance, err)
 		}
-	}
-	if !isDeploymentReady(foundDeployment) {
-		log.Info("Deployment not ready")
-		return ctrl.Result{RequeueAfter: 5}, nil
-	} else {
-		log.Info("Deployment is ready")
 	}
 
 	if instance.Spec.Method == "download" && isDeploymentReady(foundDeployment) {
