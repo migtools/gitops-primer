@@ -372,6 +372,9 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	foundDeployment := &appsv1.Deployment{}
 	if instance.Spec.Method == "download" && isJobComplete(found) {
 		log.Info("Serving up Export Download")
+		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationForeground))
+		r.Delete(ctx, foundClusterRole)
+		r.Delete(ctx, foundClusterRoleBinding)
 		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
 			if errors.IsNotFound(err) {
 				// Define a new Deployment
@@ -399,9 +402,9 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Define the circumstances to set the Status Complete
 	// key value pair
 	if instance.Spec.Method != "download" {
-		instance.Status.Completed = isJobComplete(found)
+		instance.Status.Completed = true
 	} else if instance.Spec.Method == "download" && isDeploymentReady(foundDeployment) {
-		instance.Status.Completed = isJobComplete(found)
+		instance.Status.Completed = true
 	}
 
 	// Defines the address to access the exported zip file
@@ -414,9 +417,6 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
-		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationForeground))
-		r.Delete(ctx, foundClusterRole)
-		r.Delete(ctx, foundClusterRoleBinding)
 
 		// Set reconcile status condition complete
 		instance.Status.Conditions.SetCondition(
