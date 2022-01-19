@@ -88,7 +88,7 @@ type ExportReconciler struct {
 
 func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrllog.FromContext(ctx)
-
+	log.Info("Starting to process")
 	// Fetch the Export instance
 	instance := &primerv1alpha1.Export{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
@@ -104,7 +104,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 		// Error reading the object - requeue the request.
 		log.Error(err, "Failed to get Export")
-		updateErrCondition(instance, err)
+		r.updateErrCondition(instance, err)
 		return ctrl.Result{}, err
 	}
 
@@ -145,15 +145,14 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			if err := r.Create(ctx, persistentVC); err != nil {
 				log.Error(err, "Failed to create a PVC", "persistentVC.Namespace", persistentVC.Namespace, "persistentVC.Name", persistentVC.Name)
 
-				updateErrCondition(instance, err)
+				r.updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
 			// Persistent Volume created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get PVC")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
+		r.updateErrCondition(instance, err)
 	}
 
 	// Check if the export job already exists, if not create a new one
@@ -170,7 +169,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
 				if err = r.Create(ctx, job); err != nil {
 					log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-					updateErrCondition(instance, err)
+					r.updateErrCondition(instance, err)
 					return ctrl.Result{}, err
 				}
 				// Job created successfully - return and requeue
@@ -181,7 +180,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
 				if err = r.Create(ctx, job); err != nil {
 					log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-					updateErrCondition(instance, err)
+					r.updateErrCondition(instance, err)
 					return ctrl.Result{}, err
 				}
 				// Job created successfully - return and requeue
@@ -189,8 +188,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			}
 		}
 		log.Error(err, "Failed to get Job")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
+		r.updateErrCondition(instance, err)
 	}
 
 	// Check if the Service Account already exists, if not create a new one
@@ -206,15 +204,14 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			if err := r.Create(ctx, serviceAcct); err != nil {
 				log.Error(err, "Failed to create new Service Account", "serviceAcct.Namespace", serviceAcct.Namespace, "serviceAcct.Name", serviceAcct.Name)
 
-				updateErrCondition(instance, err)
+				r.updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
 			// Service Account created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get Service Account")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
+		r.updateErrCondition(instance, err)
 	}
 
 	// Check if the Secret already exists, if not create a new one
@@ -230,15 +227,14 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			if err := r.Create(ctx, proxySecret); err != nil {
 				log.Error(err, "Failed to create new oauth Secret", "proxySecret.Namespace", proxySecret.Namespace, "proxySecret.Name", proxySecret.Name)
 
-				updateErrCondition(instance, err)
+				r.updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
 			// Secret created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get oauth Secret")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
+		r.updateErrCondition(instance, err)
 	}
 
 	// Check if the Route already exists, if not create a new one
@@ -254,15 +250,14 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			if err := r.Create(ctx, appRoute); err != nil {
 				log.Error(err, "Failed to create new Route", "appRoute.Namespace", appRoute.Namespace, "appRoute.Name", appRoute.Name)
 
-				updateErrCondition(instance, err)
+				r.updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
 			// Route created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get Route")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
+		r.updateErrCondition(instance, err)
 	}
 
 	// Check if the Cluster Role already exists, if not create a new one
@@ -277,15 +272,14 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			log.Info("Creating a new Cluster Role", "clusterRole.Namespace", clusterRole.Namespace, "clusterRole.Name", clusterRole.Name)
 			if err := r.Create(ctx, clusterRole); err != nil {
 				log.Error(err, "Failed to create new Cluster Role", "clusterRole.Namespace", clusterRole.Namespace, "clusterRole.Name", clusterRole.Name)
-				updateErrCondition(instance, err)
+				r.updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
 			// Cluster Role created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get Cluster Role")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
+		r.updateErrCondition(instance, err)
 	}
 
 	// Check if the Cluster Role Binding already exists, if not create a new one
@@ -300,15 +294,14 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			log.Info("Creating a new Cluster Role Binding", "clusterRoleBinding.Namespace", clusterRoleBinding.Namespace, "clusterRoleBinding.Name", clusterRoleBinding.Name)
 			if err := r.Create(ctx, clusterRoleBinding); err != nil {
 				log.Error(err, "Failed to create new Cluster Role Binding", "clusterRoleBinding.Namespace", clusterRoleBinding.Namespace, "clusterRoleBinding.Name", clusterRoleBinding.Name)
-				updateErrCondition(instance, err)
+				r.updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
 			// Cluster Role Binding created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get Cluster Role Binding")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
+		r.updateErrCondition(instance, err)
 	}
 
 	// Check if method is download then check if network policy exists,
@@ -325,15 +318,14 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				log.Info("Creating a new Network Policy", "netPol.Namespace", netPol.Namespace, "netPol.Name", netPol.Name)
 				if err := r.Create(ctx, netPol); err != nil {
 					log.Error(err, "Failed to create new Network Policy", "netPol.Namespace", netPol.Namespace, "netPol.Name", netPol.Name)
-					updateErrCondition(instance, err)
+					r.updateErrCondition(instance, err)
 					return ctrl.Result{}, err
 				}
 				// NetPol  created successfully - return and requeue
 				return ctrl.Result{Requeue: true}, nil
 			}
 			log.Error(err, "Failed to get Network Policy")
-			updateErrCondition(instance, err)
-			return ctrl.Result{}, err
+			r.updateErrCondition(instance, err)
 		}
 	}
 
@@ -355,22 +347,21 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			if err := r.Create(ctx, service); err != nil {
 				log.Error(err, "Failed to create a Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
 
-				updateErrCondition(instance, err)
+				r.updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
 			// Service created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
 		log.Error(err, "Failed to get Service")
-		updateErrCondition(instance, err)
-		return ctrl.Result{}, err
+		r.updateErrCondition(instance, err)
 	}
 
 	if isJobComplete(found) {
 		instance.Status.Extracted = isJobComplete(found)
 		if err := r.Status().Update(ctx, instance); err != nil {
 			log.Error(err, "Failed to update Export status")
-			updateErrCondition(instance, err)
+			r.updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
 		log.Info("Cleaning up Job")
@@ -384,8 +375,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		instance.Status.Route = "https://" + defineRoute(foundRoute) + "/" + instance.Namespace + "-" + instance.ObjectMeta.CreationTimestamp.Rfc3339Copy().Format(time.RFC3339) + ".zip"
 		if err := r.Status().Update(ctx, instance); err != nil {
 			log.Error(err, "Failed to update Export status")
-			updateErrCondition(instance, err)
-			return ctrl.Result{}, err
+			r.updateErrCondition(instance, err)
 		}
 	}
 
@@ -403,15 +393,14 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				if err := r.Create(ctx, deployment); err != nil {
 					log.Error(err, "Failed to create a Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
 
-					updateErrCondition(instance, err)
+					r.updateErrCondition(instance, err)
 					return ctrl.Result{}, err
 				}
 				// Service created successfully - return and requeue
 				return ctrl.Result{Requeue: true}, nil
 			}
 			log.Error(err, "Failed to get Deployment")
-			updateErrCondition(instance, err)
-			return ctrl.Result{}, err
+			r.updateErrCondition(instance, err)
 		}
 	}
 
@@ -420,7 +409,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		instance.Status.Completed = isDeploymentReady(foundDeployment)
 		if err := r.Status().Update(ctx, instance); err != nil {
 			log.Error(err, "Failed to update Export status")
-			updateErrCondition(instance, err)
+			r.updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
 	} else {
@@ -489,7 +478,7 @@ func (r *ExportReconciler) CleanUpOpjects(ctx context.Context, instance *primerv
 	return nil
 }
 
-func updateErrCondition(instance *primerv1alpha1.Export, err error) {
+func (r *ExportReconciler) updateErrCondition(instance *primerv1alpha1.Export, err error) {
 	instance.Status.Conditions.SetCondition(
 		status.Condition{
 			Type:    primerv1alpha1.ConditionReconciled,
@@ -497,6 +486,7 @@ func updateErrCondition(instance *primerv1alpha1.Export, err error) {
 			Reason:  primerv1alpha1.ReconciledReasonError,
 			Message: err.Error(),
 		})
+	r.Client.Status().Update(context.TODO(), instance)
 }
 
 // jobGitForExport returns a instance Job object
