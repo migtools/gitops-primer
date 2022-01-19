@@ -158,37 +158,36 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Check if the export job already exists, if not create a new one
 	// based on if its git or download the appropriate func will be called
 	found := &batchv1.Job{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, found); err != nil {
-		if isJobComplete(found) || instance.Status.Extracted {
-			return ctrl.Result{}, nil
-		}
-		if errors.IsNotFound(err) {
-			if instance.Spec.Method == "git" {
-				// Define a new job
-				job := r.jobGitForExport(instance)
-				log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-				if err = r.Create(ctx, job); err != nil {
-					log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-					r.updateErrCondition(instance, err)
-					return ctrl.Result{}, err
+	if !instance.Status.Extracted {
+		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, found); err != nil {
+			if errors.IsNotFound(err) {
+				if instance.Spec.Method == "git" {
+					// Define a new job
+					job := r.jobGitForExport(instance)
+					log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+					if err = r.Create(ctx, job); err != nil {
+						log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+						r.updateErrCondition(instance, err)
+						return ctrl.Result{}, err
+					}
+					// Job created successfully - return and requeue
+					return ctrl.Result{Requeue: true}, nil
+				} else if instance.Spec.Method == "download" {
+					// Define a new job
+					job := r.jobDownloadForExport(instance)
+					log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+					if err = r.Create(ctx, job); err != nil {
+						log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
+						r.updateErrCondition(instance, err)
+						return ctrl.Result{}, err
+					}
+					// Job created successfully - return and requeue
+					return ctrl.Result{Requeue: true}, nil
 				}
-				// Job created successfully - return and requeue
-				return ctrl.Result{Requeue: true}, nil
-			} else if instance.Spec.Method == "download" {
-				// Define a new job
-				job := r.jobDownloadForExport(instance)
-				log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-				if err = r.Create(ctx, job); err != nil {
-					log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
-					r.updateErrCondition(instance, err)
-					return ctrl.Result{}, err
-				}
-				// Job created successfully - return and requeue
-				return ctrl.Result{Requeue: true}, nil
 			}
+			log.Error(err, "Failed to get Job")
+			r.updateErrCondition(instance, err)
 		}
-		log.Error(err, "Failed to get Job")
-		r.updateErrCondition(instance, err)
 	}
 
 	// Check if the Service Account already exists, if not create a new one
@@ -262,46 +261,47 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Check if the Cluster Role already exists, if not create a new one
 	foundClusterRole := &rbacv1.ClusterRole{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRole); err != nil {
-		if isJobComplete(found) || instance.Status.Extracted {
-			return ctrl.Result{}, nil
-		}
-		if errors.IsNotFound(err) {
-			// Define a new Role
-			clusterRole := r.clusterRoleGenerate(instance)
-			log.Info("Creating a new Cluster Role", "clusterRole.Namespace", clusterRole.Namespace, "clusterRole.Name", clusterRole.Name)
-			if err := r.Create(ctx, clusterRole); err != nil {
-				log.Error(err, "Failed to create new Cluster Role", "clusterRole.Namespace", clusterRole.Namespace, "clusterRole.Name", clusterRole.Name)
-				r.updateErrCondition(instance, err)
-				return ctrl.Result{}, err
+	if !instance.Status.Extracted {
+		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRole); err != nil {
+			if errors.IsNotFound(err) {
+				// Define a new Role
+				clusterRole := r.clusterRoleGenerate(instance)
+				log.Info("Creating a new Cluster Role", "clusterRole.Namespace", clusterRole.Namespace, "clusterRole.Name", clusterRole.Name)
+				if err := r.Create(ctx, clusterRole); err != nil {
+					log.Error(err, "Failed to create new Cluster Role", "clusterRole.Namespace", clusterRole.Namespace, "clusterRole.Name", clusterRole.Name)
+					r.updateErrCondition(instance, err)
+					return ctrl.Result{}, err
+				}
+				// Cluster Role created successfully - return and requeue
+				return ctrl.Result{Requeue: true}, nil
 			}
-			// Cluster Role created successfully - return and requeue
-			return ctrl.Result{Requeue: true}, nil
+			log.Error(err, "Failed to get Cluster Role")
+			r.updateErrCondition(instance, err)
 		}
-		log.Error(err, "Failed to get Cluster Role")
-		r.updateErrCondition(instance, err)
 	}
 
 	// Check if the Cluster Role Binding already exists, if not create a new one
 	foundClusterRoleBinding := &rbacv1.ClusterRoleBinding{}
-	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRoleBinding); err != nil {
-		if isJobComplete(found) || instance.Status.Extracted {
-			return ctrl.Result{}, nil
-		}
-		if errors.IsNotFound(err) {
-			// Define a new Cluster Role Binding
-			clusterRoleBinding := r.clusterRoleBindingGenerate(instance)
-			log.Info("Creating a new Cluster Role Binding", "clusterRoleBinding.Namespace", clusterRoleBinding.Namespace, "clusterRoleBinding.Name", clusterRoleBinding.Name)
-			if err := r.Create(ctx, clusterRoleBinding); err != nil {
-				log.Error(err, "Failed to create new Cluster Role Binding", "clusterRoleBinding.Namespace", clusterRoleBinding.Namespace, "clusterRoleBinding.Name", clusterRoleBinding.Name)
-				r.updateErrCondition(instance, err)
-				return ctrl.Result{}, err
+	if !instance.Status.Extracted {
+		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRoleBinding); err != nil {
+			if isJobComplete(found) || instance.Status.Extracted {
+				return ctrl.Result{}, nil
 			}
-			// Cluster Role Binding created successfully - return and requeue
-			return ctrl.Result{Requeue: true}, nil
+			if errors.IsNotFound(err) {
+				// Define a new Cluster Role Binding
+				clusterRoleBinding := r.clusterRoleBindingGenerate(instance)
+				log.Info("Creating a new Cluster Role Binding", "clusterRoleBinding.Namespace", clusterRoleBinding.Namespace, "clusterRoleBinding.Name", clusterRoleBinding.Name)
+				if err := r.Create(ctx, clusterRoleBinding); err != nil {
+					log.Error(err, "Failed to create new Cluster Role Binding", "clusterRoleBinding.Namespace", clusterRoleBinding.Namespace, "clusterRoleBinding.Name", clusterRoleBinding.Name)
+					r.updateErrCondition(instance, err)
+					return ctrl.Result{}, err
+				}
+				// Cluster Role Binding created successfully - return and requeue
+				return ctrl.Result{Requeue: true}, nil
+			}
+			log.Error(err, "Failed to get Cluster Role Binding")
+			r.updateErrCondition(instance, err)
 		}
-		log.Error(err, "Failed to get Cluster Role Binding")
-		r.updateErrCondition(instance, err)
 	}
 
 	// Check if method is download then check if network policy exists,
@@ -364,9 +364,11 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			r.updateErrCondition(instance, err)
 			return ctrl.Result{}, err
 		}
-		log.Info("Cleaning up Job")
+		log.Info("Cleaning up clusterrole")
 		r.Delete(ctx, foundClusterRole)
+		log.Info("cleaning clusterrolebinding")
 		r.Delete(ctx, foundClusterRoleBinding)
+		log.Info("job cleanup")
 		r.Delete(ctx, found, client.PropagationPolicy(metav1.DeletePropagationForeground))
 	}
 
@@ -406,6 +408,8 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if !isDeploymentReady(foundDeployment) {
 		log.Info("Deployment not ready")
 		return ctrl.Result{RequeueAfter: 5}, nil
+	} else {
+		log.Info("Deployment is ready")
 	}
 
 	if instance.Spec.Method == "download" && isDeploymentReady(foundDeployment) {
