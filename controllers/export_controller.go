@@ -32,6 +32,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/util/wait"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -147,6 +148,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				r.updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
+			if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+				if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundVolume); err != nil {
+					if errors.IsNotFound(err) {
+						return false, nil
+					} else {
+						return false, err
+					}
+				}
+				return true, nil
+			}); err != nil {
+				return ctrl.Result{}, err
+			}
 			// Persistent Volume created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
@@ -169,6 +182,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 						r.updateErrCondition(instance, err)
 						return ctrl.Result{}, err
 					}
+					if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+						if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, found); err != nil {
+							if errors.IsNotFound(err) {
+								return false, nil
+							} else {
+								return false, err
+							}
+						}
+						return true, nil
+					}); err != nil {
+						return ctrl.Result{}, err
+					}
 					// Job created successfully - return and requeue
 					return ctrl.Result{Requeue: true}, nil
 				} else if instance.Spec.Method == "download" {
@@ -178,6 +203,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 					if err = r.Create(ctx, job); err != nil {
 						log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
 						r.updateErrCondition(instance, err)
+						return ctrl.Result{}, err
+					}
+					if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+						if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, found); err != nil {
+							if errors.IsNotFound(err) {
+								return false, nil
+							} else {
+								return false, err
+							}
+						}
+						return true, nil
+					}); err != nil {
 						return ctrl.Result{}, err
 					}
 					// Job created successfully - return and requeue
@@ -205,6 +242,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				r.updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
+			if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+				if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundSA); err != nil {
+					if errors.IsNotFound(err) {
+						return false, nil
+					} else {
+						return false, err
+					}
+				}
+				return true, nil
+			}); err != nil {
+				return ctrl.Result{}, err
+			}
 			// Service Account created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
@@ -226,6 +275,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				log.Error(err, "Failed to create new oauth Secret", "proxySecret.Namespace", proxySecret.Namespace, "proxySecret.Name", proxySecret.Name)
 
 				r.updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+				if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundSecret); err != nil {
+					if errors.IsNotFound(err) {
+						return false, nil
+					} else {
+						return false, err
+					}
+				}
+				return true, nil
+			}); err != nil {
 				return ctrl.Result{}, err
 			}
 			// Secret created successfully - return and requeue
@@ -251,6 +312,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				r.updateErrCondition(instance, err)
 				return ctrl.Result{}, err
 			}
+			if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+				if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundRoute); err != nil {
+					if errors.IsNotFound(err) {
+						return false, nil
+					} else {
+						return false, err
+					}
+				}
+				return true, nil
+			}); err != nil {
+				return ctrl.Result{}, err
+			}
 			// Route created successfully - return and requeue
 			return ctrl.Result{Requeue: true}, nil
 		}
@@ -269,6 +342,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				if err := r.Create(ctx, clusterRole); err != nil {
 					log.Error(err, "Failed to create new Cluster Role", "clusterRole.Namespace", clusterRole.Namespace, "clusterRole.Name", clusterRole.Name)
 					r.updateErrCondition(instance, err)
+					return ctrl.Result{}, err
+				}
+				if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+					if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRole); err != nil {
+						if errors.IsNotFound(err) {
+							return false, nil
+						} else {
+							return false, err
+						}
+					}
+					return true, nil
+				}); err != nil {
 					return ctrl.Result{}, err
 				}
 				// Cluster Role created successfully - return and requeue
@@ -295,6 +380,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 					r.updateErrCondition(instance, err)
 					return ctrl.Result{}, err
 				}
+				if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+					if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Namespace + "-" + instance.Name, Namespace: instance.Namespace}, foundClusterRoleBinding); err != nil {
+						if errors.IsNotFound(err) {
+							return false, nil
+						} else {
+							return false, err
+						}
+					}
+					return true, nil
+				}); err != nil {
+					return ctrl.Result{}, err
+				}
 				// Cluster Role Binding created successfully - return and requeue
 				return ctrl.Result{Requeue: true}, nil
 			}
@@ -318,6 +415,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				if err := r.Create(ctx, netPol); err != nil {
 					log.Error(err, "Failed to create new Network Policy", "netPol.Namespace", netPol.Namespace, "netPol.Name", netPol.Name)
 					r.updateErrCondition(instance, err)
+					return ctrl.Result{}, err
+				}
+				if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+					if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundNetPol); err != nil {
+						if errors.IsNotFound(err) {
+							return false, nil
+						} else {
+							return false, err
+						}
+					}
+					return true, nil
+				}); err != nil {
 					return ctrl.Result{}, err
 				}
 				// NetPol  created successfully - return and requeue
@@ -347,6 +456,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				log.Error(err, "Failed to create a Service", "service.Namespace", service.Namespace, "service.Name", service.Name)
 
 				r.updateErrCondition(instance, err)
+				return ctrl.Result{}, err
+			}
+			if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+				if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundService); err != nil {
+					if errors.IsNotFound(err) {
+						return false, nil
+					} else {
+						return false, err
+					}
+				}
+				return true, nil
+			}); err != nil {
 				return ctrl.Result{}, err
 			}
 			// Service created successfully - return and requeue
@@ -395,6 +516,18 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 					log.Error(err, "Failed to create a Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
 
 					r.updateErrCondition(instance, err)
+					return ctrl.Result{}, err
+				}
+				if err := wait.Poll(time.Second*1, time.Second*15, func() (done bool, err error) {
+					if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
+						if errors.IsNotFound(err) {
+							return false, nil
+						} else {
+							return false, err
+						}
+					}
+					return true, nil
+				}); err != nil {
 					return ctrl.Result{}, err
 				}
 				// Service created successfully - return and requeue
