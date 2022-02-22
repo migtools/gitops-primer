@@ -292,7 +292,7 @@ spec:
                 app: export-webhook
             spec:
               containers:
-              - image: quay.io/konveyor/gitops-primer-webhook:v0.0.1
+              - image: quay.io/konveyor/gitops-primer-webhook:v0.0.6
                 imagePullPolicy: IfNotPresent
                 name: export-webhook
                 ports:
