@@ -35,6 +35,7 @@ func RemoveFields(u unstructured.Unstructured) (jsonpatch.Patch, error) {
 { "op": "remove", "path": "/metadata/resourceVersion"},
 { "op": "remove", "path": "/metadata/selfLink"},
 { "op": "remove", "path": "/metadata/generation"}
+{ "op": "remove", "path": "/metadata/annotations/kubectl.kubernetes.io/last-applied-configuration"}
 ]`)
 
 	patch, err := jsonpatch.DecodePatch([]byte(patchJSON))
