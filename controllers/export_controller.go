@@ -32,11 +32,11 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/apimachinery/pkg/util/wait"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/apimachinery/pkg/util/wait"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -1067,7 +1067,7 @@ func isDeploymentReady(deployment *appsv1.Deployment) bool {
 func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	DownloaderImage := os.Getenv("DownloaderImageName")
 	if DownloaderImage == "" {
-		DownloaderImage = "quay.io/konveyor/gitops-primer:v0.0.6"
+		DownloaderImage = "quay.io/konveyor/gitops-primer:latest"
 	}
 	r.DownloaderImage = DownloaderImage
 
@@ -1085,13 +1085,7 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&primerv1alpha1.Export{}).
 		Owns(&batchv1.Job{}, builder.OnlyMetadata).
-		Owns(&corev1.ServiceAccount{}, builder.OnlyMetadata).
-		Owns(&corev1.PersistentVolumeClaim{}, builder.OnlyMetadata).
-		Owns(&corev1.Service{}, builder.OnlyMetadata).
 		Owns(&appsv1.Deployment{}, builder.OnlyMetadata).
-		Owns(&corev1.Secret{}, builder.OnlyMetadata).
-		Owns(&routev1.Route{}, builder.OnlyMetadata).
-		Owns(&networkingv1.NetworkPolicy{}, builder.OnlyMetadata).
 		WithOptions(controller.Options{
 			MaxConcurrentReconciles: 5,
 		}).
