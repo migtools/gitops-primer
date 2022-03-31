@@ -33,9 +33,9 @@ spec:
         imagePullPolicy: IfNotPresent
         env:
         - name: DownloaderImageName
-          value: quay.io/konveyor/gitops-primer-downloader:v0.0.6
+          value: quay.io/konveyor/gitops-primer-downloader:v0.0.7
         - name: ExportImageName
-          value: quay.io/konveyor/gitops-primer-export:v0.0.6
+          value: quay.io/konveyor/gitops-primer-export:v0.0.7
         - name: OauthImageName
           value: quay.io/openshift/origin-oauth-proxy:4.9
         name: manager
