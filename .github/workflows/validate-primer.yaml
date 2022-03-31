@@ -15,7 +15,7 @@ env:
   EXPORT_IMAGE: "quay.io/konveyor/gitops-primer-export"
   DOWNLOADER_IMAGE: "quay.io/konveyor/gitops-primer-downloader"
   WEBHOOK_IMAGE: "quay.io/konveyor/gitops-primer-webhook"
-  TAG: v0.0.6
+  TAG: v0.0.7
 
 
 jobs:

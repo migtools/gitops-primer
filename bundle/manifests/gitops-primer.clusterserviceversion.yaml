@@ -17,11 +17,11 @@ metadata:
       ]
     capabilities: Basic Install
     categories: OpenShift Optional
-    containerImage: quay.io/konveyor/gitops-primer:v0.0.6
+    containerImage: quay.io/konveyor/gitops-primer:v0.0.7
     operatorframework.io/suggested-namespace: gitops-primer-system
     operators.operatorframework.io/builder: operator-sdk-v1.10.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
-  name: gitops-primer.v0.0.6
+  name: gitops-primer.v0.0.7
   namespace: gitops-primer-system
 spec:
   apiservicedefinitions: {}
@@ -246,12 +246,12 @@ spec:
                 - /manager
                 env:
                 - name: DownloaderImageName
-                  value: quay.io/konveyor/gitops-primer-downloader:v0.0.6
+                  value: quay.io/konveyor/gitops-primer-downloader:v0.0.7
                 - name: ExportImageName
-                  value: quay.io/konveyor/gitops-primer-export:v0.0.6
+                  value: quay.io/konveyor/gitops-primer-export:v0.0.7
                 - name: OauthImageName
                   value: quay.io/openshift/origin-oauth-proxy:4.9
-                image: quay.io/konveyor/gitops-primer:v0.0.6
+                image: quay.io/konveyor/gitops-primer:v0.0.7
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -292,7 +292,7 @@ spec:
                 app: export-webhook
             spec:
               containers:
-              - image: quay.io/konveyor/gitops-primer-webhook:v0.0.6
+              - image: quay.io/konveyor/gitops-primer-webhook:v0.0.7
                 imagePullPolicy: IfNotPresent
                 name: export-webhook
                 ports:
@@ -363,17 +363,17 @@ spec:
   provider:
     name: Konveyor
   relatedImages:
-  - image: quay.io/konveyor/gitops-primer-downloader:v0.0.6
+  - image: quay.io/konveyor/gitops-primer-downloader:v0.0.7
     name: downloader
-  - image: quay.io/konveyor/gitops-primer-export:v0.0.6
+  - image: quay.io/konveyor/gitops-primer-export:v0.0.7
     name: export
-  - image: quay.io/konveyor/gitops-primer-webhook:v0.0.6
+  - image: quay.io/konveyor/gitops-primer-webhook:v0.0.7
     name: webhook
   - image: quay.io/openshift/origin-oauth-proxy:4.9
     name: oauth-proxy
   - image: registry.redhat.io/openshift4/ose-kube-rbac-proxy@sha256:6d57bfd91fac9b68eb72d27226bc297472ceb136c996628b845ecc54a48b31cb
     name: ose-kube-rbac-proxy
-  version: 0.0.6
+  version: 0.0.7
   webhookdefinitions:
   - admissionReviewVersions:
     - v1
