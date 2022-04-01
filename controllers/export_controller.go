@@ -1079,7 +1079,7 @@ func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	OauthImage := os.Getenv("OauthImageName")
 	if OauthImage == "" {
-		OauthImage = "quay.io/openshift/origin-oauth-proxy:4.9"
+		OauthImage = "quay.io/openshift/origin-oauth-proxy:4.10"
 	}
 	r.OauthImage = OauthImage
 	return ctrl.NewControllerManagedBy(mgr).
