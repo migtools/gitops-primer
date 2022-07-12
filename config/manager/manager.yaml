@@ -23,6 +23,8 @@ spec:
         control-plane: controller-manager
     spec:
       securityContext:
+        seccompProfile:
+          type: RuntimeDefault
         runAsNonRoot: true
       containers:
       - command:

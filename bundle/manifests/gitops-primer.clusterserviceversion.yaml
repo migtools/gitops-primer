@@ -238,6 +238,12 @@ spec:
                 - containerPort: 8443
                   name: https
                 resources: {}
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                  runAsNonRoot: true
               - args:
                 - --health-probe-bind-address=:8081
                 - --metrics-bind-address=127.0.0.1:8080
@@ -275,8 +281,14 @@ spec:
                     memory: 20Mi
                 securityContext:
                   allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                  runAsNonRoot: true
               securityContext:
                 runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
               serviceAccountName: gitops-primer-controller-manager
               terminationGracePeriodSeconds: 10
       - name: gitops-primer-mutating-webhook-deployment
@@ -301,10 +313,20 @@ spec:
                   limits:
                     cpu: 500m
                     memory: 128Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                  runAsNonRoot: true
                 volumeMounts:
                 - mountPath: /tls
                   name: export-tls-secret
                   readOnly: true
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
               volumes:
               - name: export-tls-secret
                 secret:

@@ -626,6 +626,8 @@ func (r *ExportReconciler) updateErrCondition(instance *primerv1alpha1.Export, e
 // jobGitForExport returns a instance Job object
 func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Job {
 	mode := int32(0644)
+	trueBool := true
+	falseBool := false
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
@@ -656,6 +658,16 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 							{Name: "sshkeys", MountPath: "/keys"},
 							{Name: "output", MountPath: "/output"},
 						},
+						SecurityContext: &corev1.SecurityContext{
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"ALL"},
+							},
+							AllowPrivilegeEscalation: &falseBool,
+							RunAsNonRoot:             &trueBool,
+							SeccompProfile: &corev1.SeccompProfile{
+								Type: "RuntimeDefault",
+							},
+						},
 					}},
 					Volumes: []corev1.Volume{
 						{Name: "output", VolumeSource: corev1.VolumeSource{
@@ -681,6 +693,8 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 
 // jobGitForExport returns a instance Job object
 func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batchv1.Job {
+	trueBool := true
+	falseBool := false
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
@@ -708,6 +722,16 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "output", MountPath: "/output"},
+						},
+						SecurityContext: &corev1.SecurityContext{
+							Capabilities: &corev1.Capabilities{
+								Drop: []corev1.Capability{"ALL"},
+							},
+							AllowPrivilegeEscalation: &falseBool,
+							RunAsNonRoot:             &trueBool,
+							SeccompProfile: &corev1.SeccompProfile{
+								Type: "RuntimeDefault",
+							},
 						},
 					}},
 					Volumes: []corev1.Volume{
@@ -919,6 +943,8 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 	// Define the deployment for hosting the export
 	replicas := int32(1)
 	secretMode := int32(420)
+	falseBool := bool(false)
+	trueBool := bool(true)
 	primerName := "primer-export-" + m.Name
 	openshiftSar := `{-openshift-sar={"resource": "namespaces","resourceName":` + primerName + `,"namespace": ` + m.Namespace + `,"verb":"get"}"`
 	dep := &appsv1.Deployment{
@@ -959,6 +985,16 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 							VolumeMounts: []corev1.VolumeMount{
 								{Name: "output", MountPath: "/var/www/html"},
 							},
+							SecurityContext: &corev1.SecurityContext{
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+								AllowPrivilegeEscalation: &falseBool,
+								RunAsNonRoot:             &trueBool,
+								SeccompProfile: &corev1.SeccompProfile{
+									Type: "RuntimeDefault",
+								},
+							},
 						},
 						{
 							Image: r.OauthImage,
@@ -985,6 +1021,16 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 							VolumeMounts: []corev1.VolumeMount{
 								{Name: "primer-oauth-tls", MountPath: "/etc/tls/private"},
 								{Name: "secret-primer-proxy", MountPath: "/etc/proxy/secrets"},
+							},
+							SecurityContext: &corev1.SecurityContext{
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+								AllowPrivilegeEscalation: &falseBool,
+								RunAsNonRoot:             &trueBool,
+								SeccompProfile: &corev1.SeccompProfile{
+									Type: "RuntimeDefault",
+								},
 							},
 						},
 					},

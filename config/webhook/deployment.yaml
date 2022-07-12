@@ -15,6 +15,10 @@ spec:
       labels:
         app: export-webhook
     spec:
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: export-webhook
         # TODO: env var/kustomize this
@@ -30,7 +34,13 @@ spec:
         resources:
           limits:
             memory: "128Mi"
-            cpu: "500m"           
+            cpu: "500m"
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
       volumes:
       - name: export-tls-secret
         secret:
