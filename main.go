@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"strconv"
 
@@ -78,7 +79,7 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	// setting privileged pod security labels to operator ns
-	err := addPodSecurityPrivilegedLabels("gitops-primer-system")
+	err := addPodSecurityPrivilegedLabels()
 	if err != nil {
 		setupLog.Error(err, "error setting privileged pod security labels to operator namespace")
 		os.Exit(1)
@@ -160,7 +161,7 @@ func main() {
 }
 
 // setting privileged pod security labels to OADP operator namespace
-func addPodSecurityPrivilegedLabels(namespace string) error {
+func addPodSecurityPrivilegedLabels() error {
 	setupLog.Info("patching namespace with PSA labels")
 	kubeconf := ctrl.GetConfigOrDie()
 	clientset, err := kubernetes.NewForConfig(kubeconf)
@@ -185,8 +186,12 @@ func addPodSecurityPrivilegedLabels(namespace string) error {
 		return nil
 	}
 
-	operatorNamespace, err := clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
+	operatorNamespace, err := clientset.CoreV1().Namespaces().Get(context.TODO(), "gitops-primer-system", metav1.GetOptions{})
 	if err != nil {
+		if errors.IsNotFound(err) {
+			setupLog.Info("gitops-primer-system namespace not found. If installing operator in any other namespace, please add appropriate namespace labels to make sure primer works in OpenShift environment 4.11+")
+			return nil
+		}
 		setupLog.Error(err, "problem getting operator namespace")
 		return err
 	}
