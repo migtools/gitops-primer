@@ -17,8 +17,6 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        seccompProfile:
-          type: RuntimeDefault
       containers:
       - name: export-webhook
         # TODO: env var/kustomize this

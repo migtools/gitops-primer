@@ -20,6 +20,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -37,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -76,6 +78,7 @@ type ExportReconciler struct {
 //+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=*,resources=*,verbs=get;list
+//+kubebuilder:rbac:groups="",resourceNames=gitops-primer-system,resources=namespaces,verbs=get;update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -133,6 +136,12 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, nil
 	}
 
+	// get securityContext appropriate to cluster version
+	securityContext, err := getSecurityContext()
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	foundVolume := &corev1.PersistentVolumeClaim{}
 	if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundVolume); err != nil {
 		if instance.Status.Completed {
@@ -175,7 +184,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			if errors.IsNotFound(err) {
 				if instance.Spec.Method == "git" {
 					// Define a new job
-					job := r.jobGitForExport(instance)
+					job := r.jobGitForExport(instance, securityContext)
 					log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
 					if err = r.Create(ctx, job); err != nil {
 						log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
@@ -198,7 +207,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 					return ctrl.Result{Requeue: true}, nil
 				} else if instance.Spec.Method == "download" {
 					// Define a new job
-					job := r.jobDownloadForExport(instance)
+					job := r.jobDownloadForExport(instance, securityContext)
 					log.Info("Creating a new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
 					if err = r.Create(ctx, job); err != nil {
 						log.Error(err, "Failed to create new Job", "Job.Namespace", job.Namespace, "Job.Name", job.Name)
@@ -510,7 +519,7 @@ func (r *ExportReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if err := r.Get(ctx, types.NamespacedName{Name: "primer-export-" + instance.Name, Namespace: instance.Namespace}, foundDeployment); err != nil {
 			if errors.IsNotFound(err) {
 				// Define a new Deployment
-				deployment := r.deploymentGenerate(instance)
+				deployment := r.deploymentGenerate(instance, securityContext)
 				log.Info("Creating a new Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
 				if err := r.Create(ctx, deployment); err != nil {
 					log.Error(err, "Failed to create a Deployment", "deployment.Namespace", deployment.Namespace, "deployment.Name", deployment.Name)
@@ -624,10 +633,8 @@ func (r *ExportReconciler) updateErrCondition(instance *primerv1alpha1.Export, e
 }
 
 // jobGitForExport returns a instance Job object
-func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Job {
+func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export, securityContext *corev1.SecurityContext) *batchv1.Job {
 	mode := int32(0644)
-	trueBool := true
-	falseBool := false
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
@@ -658,16 +665,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 							{Name: "sshkeys", MountPath: "/keys"},
 							{Name: "output", MountPath: "/output"},
 						},
-						SecurityContext: &corev1.SecurityContext{
-							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{"ALL"},
-							},
-							AllowPrivilegeEscalation: &falseBool,
-							RunAsNonRoot:             &trueBool,
-							SeccompProfile: &corev1.SeccompProfile{
-								Type: "RuntimeDefault",
-							},
-						},
+						SecurityContext: securityContext,
 					}},
 					Volumes: []corev1.Volume{
 						{Name: "output", VolumeSource: corev1.VolumeSource{
@@ -692,9 +690,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export) *batchv1.Jo
 }
 
 // jobGitForExport returns a instance Job object
-func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batchv1.Job {
-	trueBool := true
-	falseBool := false
+func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export, securityContext *corev1.SecurityContext) *batchv1.Job {
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
@@ -723,16 +719,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export) *batch
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "output", MountPath: "/output"},
 						},
-						SecurityContext: &corev1.SecurityContext{
-							Capabilities: &corev1.Capabilities{
-								Drop: []corev1.Capability{"ALL"},
-							},
-							AllowPrivilegeEscalation: &falseBool,
-							RunAsNonRoot:             &trueBool,
-							SeccompProfile: &corev1.SeccompProfile{
-								Type: "RuntimeDefault",
-							},
-						},
+						SecurityContext: securityContext,
 					}},
 					Volumes: []corev1.Volume{
 						{Name: "output", VolumeSource: corev1.VolumeSource{
@@ -939,12 +926,10 @@ func (r *ExportReconciler) svcGenerate(m *primerv1alpha1.Export) *corev1.Service
 	return service
 }
 
-func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.Deployment {
+func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export, securityContext *corev1.SecurityContext) *appsv1.Deployment {
 	// Define the deployment for hosting the export
 	replicas := int32(1)
 	secretMode := int32(420)
-	falseBool := bool(false)
-	trueBool := bool(true)
 	primerName := "primer-export-" + m.Name
 	openshiftSar := `{-openshift-sar={"resource": "namespaces","resourceName":` + primerName + `,"namespace": ` + m.Namespace + `,"verb":"get"}"`
 	dep := &appsv1.Deployment{
@@ -985,16 +970,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 							VolumeMounts: []corev1.VolumeMount{
 								{Name: "output", MountPath: "/var/www/html"},
 							},
-							SecurityContext: &corev1.SecurityContext{
-								Capabilities: &corev1.Capabilities{
-									Drop: []corev1.Capability{"ALL"},
-								},
-								AllowPrivilegeEscalation: &falseBool,
-								RunAsNonRoot:             &trueBool,
-								SeccompProfile: &corev1.SeccompProfile{
-									Type: "RuntimeDefault",
-								},
-							},
+							SecurityContext: securityContext,
 						},
 						{
 							Image: r.OauthImage,
@@ -1022,16 +998,7 @@ func (r *ExportReconciler) deploymentGenerate(m *primerv1alpha1.Export) *appsv1.
 								{Name: "primer-oauth-tls", MountPath: "/etc/tls/private"},
 								{Name: "secret-primer-proxy", MountPath: "/etc/proxy/secrets"},
 							},
-							SecurityContext: &corev1.SecurityContext{
-								Capabilities: &corev1.Capabilities{
-									Drop: []corev1.Capability{"ALL"},
-								},
-								AllowPrivilegeEscalation: &falseBool,
-								RunAsNonRoot:             &trueBool,
-								SeccompProfile: &corev1.SeccompProfile{
-									Type: "RuntimeDefault",
-								},
-							},
+							SecurityContext: securityContext,
 						},
 					},
 					ServiceAccountName: "primer-export-" + m.Name,
@@ -1107,6 +1074,46 @@ func defineRoute(route *routev1.Route) string {
 
 func isDeploymentReady(deployment *appsv1.Deployment) bool {
 	return deployment.Status.ReadyReplicas == 1
+}
+
+func getSecurityContext() (*corev1.SecurityContext, error) {
+	falseBool := bool(false)
+	trueBool := bool(true)
+	kubeconf := ctrl.GetConfigOrDie()
+	clientset, err := kubernetes.NewForConfig(kubeconf)
+	if err != nil {
+		return nil, err
+	}
+
+	version, err := clientset.ServerVersion()
+	if err != nil {
+		return nil, err
+	}
+
+	minor, err := strconv.Atoi(version.Minor)
+	if err != nil {
+		return nil, err
+	}
+
+	if minor < 24 {
+		return &corev1.SecurityContext{
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+			AllowPrivilegeEscalation: &falseBool,
+			RunAsNonRoot:             &trueBool,
+		}, nil
+	}
+	return &corev1.SecurityContext{
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+		AllowPrivilegeEscalation: &falseBool,
+		RunAsNonRoot:             &trueBool,
+		SeccompProfile: &corev1.SeccompProfile{
+			Type: "RuntimeDefault",
+		},
+	}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

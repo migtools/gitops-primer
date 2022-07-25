@@ -43,6 +43,15 @@ spec:
       - rules:
         - apiGroups:
           - ""
+          resourceNames:
+          - gitops-primer-system
+          resources:
+          - namespaces
+          verbs:
+          - get
+          - update
+        - apiGroups:
+          - ""
           resources:
           - users
           verbs:
@@ -287,8 +296,6 @@ spec:
                   runAsNonRoot: true
               securityContext:
                 runAsNonRoot: true
-                seccompProfile:
-                  type: RuntimeDefault
               serviceAccountName: gitops-primer-controller-manager
               terminationGracePeriodSeconds: 10
       - name: gitops-primer-mutating-webhook-deployment
@@ -325,8 +332,6 @@ spec:
                   readOnly: true
               securityContext:
                 runAsNonRoot: true
-                seccompProfile:
-                  type: RuntimeDefault
               volumes:
               - name: export-tls-secret
                 secret:

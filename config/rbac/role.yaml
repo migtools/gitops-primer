@@ -8,6 +8,15 @@ metadata:
 rules:
 - apiGroups:
   - ""
+  resourceNames:
+  - gitops-primer-system
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - update
+- apiGroups:
+  - ""
   resources:
   - users
   verbs:
