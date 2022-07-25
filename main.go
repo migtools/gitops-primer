@@ -17,9 +17,13 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
+	"strconv"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -72,6 +76,15 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	// setting privileged pod security labels to operator ns
+	err := addPodSecurityPrivilegedLabels("gitops-primer-system")
+	if err != nil {
+		setupLog.Error(err, "error setting privileged pod security labels to operator namespace")
+		os.Exit(1)
+	}
+
+	setupLog.Info("Labels added")
 
 	newCacheFunc := cache.BuilderWithOptions(cache.Options{
 		Scheme: scheme,
@@ -144,4 +157,52 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+// setting privileged pod security labels to OADP operator namespace
+func addPodSecurityPrivilegedLabels(namespace string) error {
+	setupLog.Info("patching namespace with PSA labels")
+	kubeconf := ctrl.GetConfigOrDie()
+	clientset, err := kubernetes.NewForConfig(kubeconf)
+	if err != nil {
+		setupLog.Error(err, "problem getting client")
+		return err
+	}
+
+	version, err := clientset.ServerVersion()
+	if err != nil {
+		setupLog.Error(err, "problem getting server version")
+		return err
+	}
+
+	minor, err := strconv.Atoi(version.Minor)
+	if err != nil {
+		setupLog.Error(err, "problem getting minor version")
+		return err
+	}
+
+	if minor < 24 {
+		return nil
+	}
+
+	operatorNamespace, err := clientset.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
+	if err != nil {
+		setupLog.Error(err, "problem getting operator namespace")
+		return err
+	}
+
+	privilegedLabels := map[string]string{
+		"pod-security.kubernetes.io/enforce": "privileged",
+		"pod-security.kubernetes.io/audit":   "privileged",
+		"pod-security.kubernetes.io/warn":    "privileged",
+	}
+
+	operatorNamespace.SetLabels(privilegedLabels)
+
+	_, err = clientset.CoreV1().Namespaces().Update(context.TODO(), operatorNamespace, metav1.UpdateOptions{})
+	if err != nil {
+		setupLog.Error(err, "problem patching operator namespace for privileged pod security labels")
+		return err
+	}
+	return nil
 }
