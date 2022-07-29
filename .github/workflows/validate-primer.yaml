@@ -177,6 +177,7 @@ jobs:
         with:
           name: primer-downloader
           path: /tmp/downloader.tar
+
   build-webhook:
     name: Build-Webhook
     runs-on: ubuntu-20.04
@@ -229,7 +230,7 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: export-image
-          path: export/export.tar
+          path: /tmp/export.tar
 
       - name: load and tag the export as latest
         run: |
