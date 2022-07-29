@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/evanphx/json-patch v4.11.0+incompatible
-	github.com/konveyor/crane-lib v0.0.1
+	github.com/konveyor/crane-lib v0.0.7
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0
 	github.com/openshift/api v0.0.0-20210625082935-ad54d363d274
