@@ -199,13 +199,13 @@ jobs:
           name: primer-operator
           path: export/operator/operator.tar
 
-      - name: load export
+      - name: Load container artifact
         uses: actions/download-artifact@v1
         with:
           name: export-image
-          path: /tmp/export.tar
+          path: /tmp
 
-      - name: load and tag the export as latest
+      - name: Import container image
         run: |
           docker load -i /tmp/export.tar
           docker tag ${EXPORT_IMAGE} ${EXPORT_IMAGE}:latest
