@@ -27,8 +27,9 @@ func main() {
 	cli.RunAndExit(cli.NewCustomPlugin("NamespaceRemovalPlugin", "v1", nil, Run))
 }
 
-func Run(u *unstructured.Unstructured, extras map[string]string) (transform.PluginResponse, error) {
-	// plugin writers need to write custome code here.
+func Run(request transform.PluginRequest) (transform.PluginResponse, error) {
+	// plugin writers need to write custom code here.
+	u := &request.Unstructured
 	var patch jsonpatch.Patch
 	var err error
 	switch u.GetKind() {
