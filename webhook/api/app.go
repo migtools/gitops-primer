@@ -54,6 +54,7 @@ func (app *App) HandleMutate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userName, err := json.Marshal(&ar.Username)
+	group, err := json.Marshal(&ar.Groups)
 	if err != nil {
 		app.HandleError(w, r, fmt.Errorf("marshall user: %v", err))
 	}
@@ -64,6 +65,11 @@ func (app *App) HandleMutate(w http.ResponseWriter, r *http.Request) {
 			OP:    "add",
 			Path:  "/spec/user",
 			Value: userName,
+		},
+		JSONPatchEntry{
+			OP:    "add",
+			Path:  "/spec/group",
+			Value: group,
 		},
 	}
 

@@ -660,6 +660,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export, securityCon
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "METHOD", Value: m.Spec.Method},
 							{Name: "USER", Value: m.Spec.User},
+							{Name: "GROUP", Value: m.Spec.Group},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "sshkeys", MountPath: "/keys"},
@@ -858,9 +859,9 @@ func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1
 		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups:     []string{""},
-				Resources:     []string{"users"},
+				Resources:     []string{"users", "groups"},
 				Verbs:         []string{"impersonate"},
-				ResourceNames: []string{m.Spec.User},
+				ResourceNames: []string{m.Spec.User, m.Spec.Group},
 			},
 		},
 	}

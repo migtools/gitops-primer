@@ -73,6 +73,7 @@ fi
 
 export KUBECONFIG=/tmp/kubeconfig
 crane export --export-dir /tmp/export --as-user ${USER}
+crane export --export-dir /tmp/export --as-user ${USER} --as-group ${GROUP}
 crane transform --export-dir /tmp/export/resources --plugin-dir /opt --transform-dir /tmp/transform --skip-plugins KubernetesPlugin
 crane apply --export-dir /tmp/export/resources --transform-dir /tmp/transform --output-dir /output/repo
 

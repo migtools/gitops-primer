@@ -40,6 +40,9 @@ spec:
                 description: Email used to specify the user who performed the git
                   commit
                 type: string
+              group:
+                description: Set automatically by the webhook to dictate the group
+                type: string
               method:
                 description: Method download or git. This defines which process to
                   use for exporting objects from a cluster
