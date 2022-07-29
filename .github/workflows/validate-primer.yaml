@@ -196,6 +196,79 @@ jobs:
           name: primer-webhook
           path: /tmp/webhook.tar
 
+  export-latest-images:
+    name: Export all images with the latest tag and push to quay
+    needs: build-export
+    runs-on: ubuntu-20.04
+    steps:
+      - name: load the webhook
+        uses: actions/download-artifact@v1
+        with:
+          name: primer-webhook
+          path: export/webhook/webhook.tar
+    
+      - name: load the downloader
+        uses: actions/download-artifact@v1
+        with:
+          name: primer-downloader
+          path: export/downloader/downloader.tar
+    
+      - name: load the bundle
+        uses: actions/download-artifact@v1
+        with:
+          name: primer-bundle
+          path: export/bundle/bundle.tar
+
+      - name: load the operator
+        uses: actions/download-artifact@v1
+        with:
+          name: primer-operator
+          path: export/operator/operator.tar
+
+      - name: load export
+        uses: actions/download-artifact@v1
+        with:
+          name: export-image
+          path: export/export.tar
+
+      - name: load and tag the export as latest
+        run: |
+          docker load -i /tmp/export.tar
+          docker tag ${EXPORT_IMAGE} ${EXPORT_IMAGE}:latest
+
+      - name: load and tag the webhook as latest
+        run: |
+          docker load -i /tmp/webhook.tar
+          docker tag ${WEBHOOK_IMAGE} ${WEBHOOK_IMAGE}:latest
+
+      - name: load and tag the downloader as latest
+        run: |
+          docker load -i /tmp/downloader.tar
+          docker tag ${DOWNLOADER_IMAGE} ${DOWNLOADER_IMAGE}:latest
+
+      - name: load and tag the bundle as latest
+        run: |
+          docker load -i /tmp/bundle.tar
+          docker tag ${BUNDLE_IMAGE} ${BUNDLE_IMAGE}:latest
+
+      - name: load and tag the operator as latest
+        run: |
+          docker load -i /tmp/operator.tar
+          docker tag ${OPERATOR_IMAGE} ${OPERATOR_IMAGE}:latest
+
+      - name: login to quay
+        run: |
+          echo "Attempting docker login to: ${REGISTRY}"
+          echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}          
+
+      - name: push all latest images
+        run: |
+          docker push ${EXPORT_IMAGE}:latest
+          docker push ${WEBHOOK_IMAGE}:latest
+          docker push ${DOWNLOADER_IMAGE}:latest
+          docker push ${BUNDLE_IMAGE}:latest
+          docker push ${OPERATOR_IMAGE}:latest
+
   push-operator:
     name: Push operator container to registry
     needs: build-export
