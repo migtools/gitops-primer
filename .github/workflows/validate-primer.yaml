@@ -19,27 +19,6 @@ env:
 
 
 jobs:
-  build-crane:
-    name: Build-crane
-    runs-on: ubuntu-18.04
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Build crane
-        run: |
-          git clone https://github.com/konveyor/crane.git
-          cd crane
-          go build .
-
-      - name: Save artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: crane
-          path: crane/crane
-
   build-plugins:
     name: Build-plugins
     runs-on: ubuntu-20.04
@@ -124,7 +103,7 @@ jobs:
 
   build-export:
     name: Build-export
-    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader]
+    needs: [build-plugins, build-webhook, build-operator, build-bundle, build-downloader]
     runs-on: ubuntu-20.04
 
     steps:
@@ -139,12 +118,6 @@ jobs:
         with:
           name: plugins
           path: export/transform-plugins/
-
-      - name: Load crane artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: crane
-          path: export/
 
       - name: Build export container
         run: make -C export image
