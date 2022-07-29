@@ -179,25 +179,25 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: primer-webhook
-          path: export/webhook/webhook.tar
+          path: export/webhook.tar
     
       - name: load the downloader
         uses: actions/download-artifact@v1
         with:
           name: primer-downloader
-          path: export/downloader/downloader.tar
+          path: export/downloader.tar
     
       - name: load the bundle
         uses: actions/download-artifact@v1
         with:
           name: primer-bundle
-          path: export/bundle/bundle.tar
+          path: export/bundle.tar
 
       - name: load the operator
         uses: actions/download-artifact@v1
         with:
           name: primer-operator
-          path: export/operator/operator.tar
+          path: export/operator.tar
 
       - name: Load container artifact
         uses: actions/download-artifact@v1
