@@ -1126,13 +1126,13 @@ func getSecurityContext() (*corev1.SecurityContext, error) {
 func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	DownloaderImage := os.Getenv("DownloaderImageName")
 	if DownloaderImage == "" {
-		DownloaderImage = "quay.io/konveyor/gitops-primer:v0.0.8"
+		DownloaderImage = "quay.io/konveyor/gitops-primer:v0.0.9"
 	}
 	r.DownloaderImage = DownloaderImage
 
 	ExportImage := os.Getenv("ExportImageName")
 	if ExportImage == "" {
-		ExportImage = "quay.io/konveyor/gitops-primer-export:v0.0.8"
+		ExportImage = "quay.io/konveyor/gitops-primer-export:v0.0.9"
 	}
 	r.ExportImage = ExportImage
 
