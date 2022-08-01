@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -634,6 +635,7 @@ func (r *ExportReconciler) updateErrCondition(instance *primerv1alpha1.Export, e
 
 // jobGitForExport returns a instance Job object
 func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export, securityContext *corev1.SecurityContext) *batchv1.Job {
+	groupString := strings.Join(m.Spec.Group, ",")
 	mode := int32(0644)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -660,7 +662,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export, securityCon
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "METHOD", Value: m.Spec.Method},
 							{Name: "USER", Value: m.Spec.User},
-							{Name: "GROUP", Value: m.Spec.Group},
+							{Name: "GROUP", Value: groupString},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "sshkeys", MountPath: "/keys"},
@@ -849,6 +851,7 @@ func (r *ExportReconciler) pvcGenerate(m *primerv1alpha1.Export) *corev1.Persist
 
 func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1.ClusterRole {
 	// Define a new clusterRole object
+	impersonateList := append(m.Spec.Group, m.Spec.User)
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "primer-export-" + m.Namespace + "-" + m.Name,
@@ -861,7 +864,7 @@ func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1
 				APIGroups:     []string{""},
 				Resources:     []string{"users", "groups"},
 				Verbs:         []string{"impersonate"},
-				ResourceNames: []string{m.Spec.User, m.Spec.Group},
+				ResourceNames: impersonateList,
 			},
 		},
 	}

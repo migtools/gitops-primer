@@ -42,7 +42,9 @@ spec:
                 type: string
               group:
                 description: Set automatically by the webhook to dictate the group
-                type: string
+                items:
+                  type: string
+                type: array
               method:
                 description: Method download or git. This defines which process to
                   use for exporting objects from a cluster
