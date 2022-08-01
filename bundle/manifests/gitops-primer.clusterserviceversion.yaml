@@ -43,6 +43,13 @@ spec:
       - rules:
         - apiGroups:
           - ""
+          resources:
+          - groups
+          - users
+          verbs:
+          - impersonate
+        - apiGroups:
+          - ""
           resourceNames:
           - gitops-primer-system
           resources:
@@ -50,12 +57,6 @@ spec:
           verbs:
           - get
           - update
-        - apiGroups:
-          - ""
-          resources:
-          - users
-          verbs:
-          - impersonate
         - apiGroups:
           - '*'
           resources:
