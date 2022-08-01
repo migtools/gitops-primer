@@ -75,7 +75,7 @@ type ExportReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=users,verbs=impersonate
+//+kubebuilder:rbac:groups="",resources=users;groups,verbs=impersonate
 //+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=*,resources=*,verbs=get;list
@@ -694,6 +694,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export, securityCon
 
 // jobGitForExport returns a instance Job object
 func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export, securityContext *corev1.SecurityContext) *batchv1.Job {
+	groupString := strings.Join(m.Spec.Group, ",")
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
@@ -717,6 +718,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export, securi
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "EXPORT_NAME", Value: m.Name},
 							{Name: "USER", Value: m.Spec.User},
+							{Name: "GROUP", Value: groupString},
 							{Name: "TIME", Value: m.ObjectMeta.CreationTimestamp.Rfc3339Copy().Format(time.RFC3339)},
 						},
 						VolumeMounts: []corev1.VolumeMount{
