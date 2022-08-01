@@ -17,7 +17,7 @@ metadata:
       ]
     capabilities: Basic Install
     categories: OpenShift Optional
-    containerImage: quay.io/konveyor/gitops-primer:latest
+    containerImage: quay.io/konveyor/gitops-primer:v0.0.8
     operatorframework.io/suggested-namespace: gitops-primer-system
     operators.operatorframework.io/builder: operator-sdk-v1.18.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -262,12 +262,12 @@ spec:
                 - /manager
                 env:
                 - name: DownloaderImageName
-                  value: quay.io/konveyor/gitops-primer-downloader:latest
+                  value: quay.io/konveyor/gitops-primer-downloader:v0.0.8
                 - name: ExportImageName
-                  value: quay.io/konveyor/gitops-primer-export:latest
+                  value: quay.io/konveyor/gitops-primer-export:v0.0.8
                 - name: OauthImageName
                   value: quay.io/openshift/origin-oauth-proxy:4.10
-                image: quay.io/konveyor/gitops-primer:latest
+                image: quay.io/konveyor/gitops-primer:v0.0.8
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -312,7 +312,7 @@ spec:
                 app: export-webhook
             spec:
               containers:
-              - image: quay.io/konveyor/gitops-primer-webhook:latest
+              - image: quay.io/konveyor/gitops-primer-webhook:v0.0.8
                 imagePullPolicy: IfNotPresent
                 name: export-webhook
                 ports:
@@ -391,11 +391,11 @@ spec:
   provider:
     name: Konveyor
   relatedImages:
-  - image: quay.io/konveyor/gitops-primer-downloader:latest
+  - image: quay.io/konveyor/gitops-primer-downloader:v0.0.8
     name: downloader
-  - image: quay.io/konveyor/gitops-primer-export:latest
+  - image: quay.io/konveyor/gitops-primer-export:v0.0.8
     name: export
-  - image: quay.io/konveyor/gitops-primer-webhook:latest
+  - image: quay.io/konveyor/gitops-primer-webhook:v0.0.8
     name: webhook
   - image: quay.io/openshift/origin-oauth-proxy:4.9
     name: oauth-proxy
