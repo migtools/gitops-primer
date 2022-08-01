@@ -251,7 +251,7 @@ jobs:
 
   push-export:
     name: Push export container to registry
-    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
+    needs: [build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -291,7 +291,7 @@ jobs:
 
   push-bundle:
     name: Push bundle container to registry
-    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
+    needs: [build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -327,7 +327,7 @@ jobs:
 
   push-downloader:
     name: Push downloader image to registry
-    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
+    needs: [build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -364,7 +364,7 @@ jobs:
 
   push-webhook:
     name: Push webhook image to registry
-    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
+    needs: [build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
