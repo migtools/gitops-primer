@@ -124,28 +124,9 @@ jobs:
 
   build-export:
     name: Build-export
-    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader]
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-
-      - name: create transform-plugin dir
-        run: mkdir export/transform-plugins
-
-      - name: Load binary artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: plugins
-          path: export/transform-plugins/
-
-      - name: Load crane artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: crane
-          path: export/
-
       - name: Build export container
         run: make -C export image
 
@@ -238,7 +219,7 @@ jobs:
 
   push-export:
     name: Push export container to registry
-    needs: build-export
+    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -278,7 +259,7 @@ jobs:
 
   push-bundle:
     name: Push bundle container to registry
-    needs: build-export
+    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -314,7 +295,7 @@ jobs:
 
   push-downloader:
     name: Push downloader image to registry
-    needs: build-export
+    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
@@ -351,7 +332,7 @@ jobs:
 
   push-webhook:
     name: Push webhook image to registry
-    needs: build-export
+    needs: [build-crane, build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
