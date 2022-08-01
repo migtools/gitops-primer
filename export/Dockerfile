@@ -6,7 +6,7 @@ RUN go build -o crane main.go
 
 FROM registry.access.redhat.com/ubi8/go-toolset:1.17.10-4 AS plugin-builder
 RUN mkdir -p $APP_ROOT/src/github.com/konveyor
-RUN curl -L -o go.mod https://raw.githubusercontent.com/konveyor/gitops-primer/provide_group/go.mod 
+RUN curl -L -o go.mod https://raw.githubusercontent.com/konveyor/gitops-primer/main/go.mod
 ADD plugins $APP_ROOT/src/github.com/konveyor/gitops-primer/export/plugins
 WORKDIR $APP_ROOT/src/github.com/konveyor/gitops-primer/export/plugins
 ENV GOPATH=$APP_ROOT
