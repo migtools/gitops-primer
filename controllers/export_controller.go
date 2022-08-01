@@ -635,7 +635,7 @@ func (r *ExportReconciler) updateErrCondition(instance *primerv1alpha1.Export, e
 
 // jobGitForExport returns a instance Job object
 func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export, securityContext *corev1.SecurityContext) *batchv1.Job {
-	groupString := strings.Join(m.Spec.Group, ",")
+	groupString := strings.Join(m.Spec.Group, ";")
 	mode := int32(0644)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
