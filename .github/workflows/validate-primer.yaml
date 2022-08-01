@@ -128,6 +128,9 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+        
       - name: Build export container
         run: make -C export image
 
