@@ -17,11 +17,11 @@ metadata:
       ]
     capabilities: Basic Install
     categories: OpenShift Optional
-    containerImage: quay.io/konveyor/gitops-primer:v0.0.8
+    containerImage: quay.io/konveyor/gitops-primer:v0.0.9
     operatorframework.io/suggested-namespace: gitops-primer-system
-    operators.operatorframework.io/builder: operator-sdk-v1.10.0+git
+    operators.operatorframework.io/builder: operator-sdk-v1.18.0+git
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
-  name: gitops-primer.v0.0.8
+  name: gitops-primer.v0.0.9
   namespace: gitops-primer-system
 spec:
   apiservicedefinitions: {}
@@ -43,6 +43,13 @@ spec:
       - rules:
         - apiGroups:
           - ""
+          resources:
+          - groups
+          - users
+          verbs:
+          - impersonate
+        - apiGroups:
+          - ""
           resourceNames:
           - gitops-primer-system
           resources:
@@ -50,12 +57,6 @@ spec:
           verbs:
           - get
           - update
-        - apiGroups:
-          - ""
-          resources:
-          - users
-          verbs:
-          - impersonate
         - apiGroups:
           - '*'
           resources:
@@ -261,12 +262,12 @@ spec:
                 - /manager
                 env:
                 - name: DownloaderImageName
-                  value: quay.io/konveyor/gitops-primer-downloader:v0.0.8
+                  value: quay.io/konveyor/gitops-primer-downloader:v0.0.9
                 - name: ExportImageName
-                  value: quay.io/konveyor/gitops-primer-export:v0.0.8
+                  value: quay.io/konveyor/gitops-primer-export:v0.0.9
                 - name: OauthImageName
                   value: quay.io/openshift/origin-oauth-proxy:4.10
-                image: quay.io/konveyor/gitops-primer:v0.0.8
+                image: quay.io/konveyor/gitops-primer:v0.0.9
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -311,7 +312,7 @@ spec:
                 app: export-webhook
             spec:
               containers:
-              - image: quay.io/konveyor/gitops-primer-webhook:v0.0.8
+              - image: quay.io/konveyor/gitops-primer-webhook:v0.0.9
                 imagePullPolicy: IfNotPresent
                 name: export-webhook
                 ports:
@@ -390,17 +391,17 @@ spec:
   provider:
     name: Konveyor
   relatedImages:
-  - image: quay.io/konveyor/gitops-primer-downloader:v0.0.8
+  - image: quay.io/konveyor/gitops-primer-downloader:v0.0.9
     name: downloader
-  - image: quay.io/konveyor/gitops-primer-export:v0.0.8
+  - image: quay.io/konveyor/gitops-primer-export:v0.0.9
     name: export
-  - image: quay.io/konveyor/gitops-primer-webhook:v0.0.8
+  - image: quay.io/konveyor/gitops-primer-webhook:v0.0.9
     name: webhook
   - image: quay.io/openshift/origin-oauth-proxy:4.9
     name: oauth-proxy
   - image: registry.redhat.io/openshift4/ose-kube-rbac-proxy@sha256:6d57bfd91fac9b68eb72d27226bc297472ceb136c996628b845ecc54a48b31cb
     name: ose-kube-rbac-proxy
-  version: 0.0.8
+  version: 0.0.9
   webhookdefinitions:
   - admissionReviewVersions:
     - v1

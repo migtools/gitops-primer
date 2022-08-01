@@ -48,6 +48,9 @@ type ExportSpec struct {
 	// Set automatically by the webhook to dictate who will
 	// run the export process
 	User string `json:"user,omitempty"`
+	// Set automatically by the webhook to dictate the
+	// group
+	Group []string `json:"group,omitempty"`
 }
 
 // ExportStatus defines the observed state of Export

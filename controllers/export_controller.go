@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	routev1 "github.com/openshift/api/route/v1"
@@ -74,7 +75,7 @@ type ExportReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterroles,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=clusterrolebindings,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups="",resources=users,verbs=impersonate
+//+kubebuilder:rbac:groups="",resources=users;groups,verbs=impersonate
 //+kubebuilder:rbac:groups=route.openshift.io,resources=routes,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=networking.k8s.io,resources=networkpolicies,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=*,resources=*,verbs=get;list
@@ -634,6 +635,7 @@ func (r *ExportReconciler) updateErrCondition(instance *primerv1alpha1.Export, e
 
 // jobGitForExport returns a instance Job object
 func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export, securityContext *corev1.SecurityContext) *batchv1.Job {
+	groupString := strings.Join(m.Spec.Group, ";")
 	mode := int32(0644)
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
@@ -660,6 +662,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export, securityCon
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "METHOD", Value: m.Spec.Method},
 							{Name: "USER", Value: m.Spec.User},
+							{Name: "GROUP", Value: groupString},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "sshkeys", MountPath: "/keys"},
@@ -691,6 +694,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export, securityCon
 
 // jobGitForExport returns a instance Job object
 func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export, securityContext *corev1.SecurityContext) *batchv1.Job {
+	groupString := strings.Join(m.Spec.Group, ";")
 	job := &batchv1.Job{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "primer-export-" + m.Name,
@@ -714,6 +718,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export, securi
 							{Name: "NAMESPACE", Value: m.Namespace},
 							{Name: "EXPORT_NAME", Value: m.Name},
 							{Name: "USER", Value: m.Spec.User},
+							{Name: "GROUP", Value: groupString},
 							{Name: "TIME", Value: m.ObjectMeta.CreationTimestamp.Rfc3339Copy().Format(time.RFC3339)},
 						},
 						VolumeMounts: []corev1.VolumeMount{
@@ -848,6 +853,7 @@ func (r *ExportReconciler) pvcGenerate(m *primerv1alpha1.Export) *corev1.Persist
 
 func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1.ClusterRole {
 	// Define a new clusterRole object
+	impersonateList := append(m.Spec.Group, m.Spec.User)
 	clusterRole := &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "primer-export-" + m.Namespace + "-" + m.Name,
@@ -858,9 +864,9 @@ func (r *ExportReconciler) clusterRoleGenerate(m *primerv1alpha1.Export) *rbacv1
 		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups:     []string{""},
-				Resources:     []string{"users"},
+				Resources:     []string{"users", "groups"},
 				Verbs:         []string{"impersonate"},
-				ResourceNames: []string{m.Spec.User},
+				ResourceNames: impersonateList,
 			},
 		},
 	}
@@ -1120,13 +1126,13 @@ func getSecurityContext() (*corev1.SecurityContext, error) {
 func (r *ExportReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	DownloaderImage := os.Getenv("DownloaderImageName")
 	if DownloaderImage == "" {
-		DownloaderImage = "quay.io/konveyor/gitops-primer:v0.0.8"
+		DownloaderImage = "quay.io/konveyor/gitops-primer:v0.0.9"
 	}
 	r.DownloaderImage = DownloaderImage
 
 	ExportImage := os.Getenv("ExportImageName")
 	if ExportImage == "" {
-		ExportImage = "quay.io/konveyor/gitops-primer-export:v0.0.8"
+		ExportImage = "quay.io/konveyor/gitops-primer-export:v0.0.9"
 	}
 	r.ExportImage = ExportImage
 

@@ -4,7 +4,6 @@ import (
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/konveyor/crane-lib/transform"
 	"github.com/konveyor/crane-lib/transform/cli"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -42,7 +41,9 @@ func main() {
 	cli.RunAndExit(cli.NewCustomPlugin("Serverlesswhiteout", "v1", nil, Run))
 }
 
-func Run(u *unstructured.Unstructured, extras map[string]string) (transform.PluginResponse, error) {
+func Run(request transform.PluginRequest) (transform.PluginResponse, error) {
+	// plugin writers need to write custom code here.
+	u := &request.Unstructured
 	var patch jsonpatch.Patch
 	var err error
 	var whiteout bool
