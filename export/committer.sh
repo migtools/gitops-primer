@@ -88,6 +88,10 @@ if [ ${METHOD} == "git" ]; then
   fi
 else
   cd /output/repo
+  if ! [[ -d ${NAMESPACE} ]]; then
+    mkdir ${NAMESPACE}
+    echo "There is nothing to extract." > ${NAMESPACE}/empty-namespace.txt
+  fi
   zip -r /output/${NAMESPACE}-${TIME} ${NAMESPACE}
   rm -rf /output/repo
 fi
