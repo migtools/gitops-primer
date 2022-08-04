@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi8/go-toolset:1.17.10-4 AS crane-builder
 RUN git clone https://github.com/konveyor/crane $APP_ROOT/src/github.com/konveyor/crane
 WORKDIR $APP_ROOT/src/github.com/konveyor/crane
-RUN git checkout tags/v0.0.4
+RUN git checkout tags/v0.0.5
 RUN go build -o crane main.go
 
 FROM registry.access.redhat.com/ubi8/go-toolset:1.17.10-4 AS plugin-builder
@@ -13,15 +13,15 @@ ENV GOPATH=$APP_ROOT
 RUN go get -d ./...
 RUN go install ./...
 
-FROM registry.access.redhat.com/ubi8/ubi
+FROM registry.access.redhat.com/ubi8/ubi-minimal
 
-RUN yum update -y && \
-    yum install -y \
+RUN microdnf update -y && \
+    microdnf install -y \
       git \
       gcc \
       zip \
-      openssh-clients && \ 
-    yum clean all && \
+      openssh-clients && \
+    microdnf clean all && \
     rm -rf /var/cache/yum
 
 ADD committer.sh /
