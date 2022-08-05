@@ -45,6 +45,9 @@ spec:
                 items:
                   type: string
                 type: array
+              labelSelector:
+                description: Filter Export by labels
+                type: string
               method:
                 description: Method download or git. This defines which process to
                   use for exporting objects from a cluster

@@ -51,6 +51,8 @@ type ExportSpec struct {
 	// Set automatically by the webhook to dictate the
 	// group
 	Group []string `json:"group,omitempty"`
+	// Filter Export by labels
+	LabelSelector string `json:"labelSelector,omitempty"`
 }
 
 // ExportStatus defines the observed state of Export

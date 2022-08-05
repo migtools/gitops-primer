@@ -72,7 +72,7 @@ if [ ${METHOD} == "download" ]; then
 fi
 
 export KUBECONFIG=/tmp/kubeconfig
-if [ -z "$GROUP" ]; then crane export --export-dir /tmp/export --as ${USER} ; else IFS=';'; read -ra GARR <<< "${GROUP}"; crane export --export-dir /tmp/export --as ${USER} --as-group ${GARR[@]}; fi
+if [ -z "$GROUP" ]; then crane export --export-dir /tmp/export --as ${USER} -l "${LABELS}"; else IFS=';'; read -ra GARR <<< "${GROUP}"; crane export --export-dir /tmp/export --as ${USER} --as-group ${GARR[@]} -l "${LABELS}"; fi
 crane transform --export-dir /tmp/export/resources --plugin-dir /opt --transform-dir /tmp/transform --skip-plugins KubernetesPlugin
 crane apply --export-dir /tmp/export/resources --transform-dir /tmp/transform --output-dir /output/repo
 

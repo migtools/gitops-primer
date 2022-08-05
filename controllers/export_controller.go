@@ -663,6 +663,7 @@ func (r *ExportReconciler) jobGitForExport(m *primerv1alpha1.Export, securityCon
 							{Name: "METHOD", Value: m.Spec.Method},
 							{Name: "USER", Value: m.Spec.User},
 							{Name: "GROUP", Value: groupString},
+							{Name: "LABELS", Value: m.Spec.LabelSelector},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "sshkeys", MountPath: "/keys"},
@@ -720,6 +721,7 @@ func (r *ExportReconciler) jobDownloadForExport(m *primerv1alpha1.Export, securi
 							{Name: "USER", Value: m.Spec.User},
 							{Name: "GROUP", Value: groupString},
 							{Name: "TIME", Value: m.ObjectMeta.CreationTimestamp.Rfc3339Copy().Format(time.RFC3339)},
+							{Name: "LABELS", Value: m.Spec.LabelSelector},
 						},
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "output", MountPath: "/output"},
