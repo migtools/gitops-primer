@@ -19,27 +19,6 @@ env:
 
 
 jobs:
-  build-plugins:
-    name: Build-plugins
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v2
-
-      - name: Install Go
-        uses: actions/setup-go@v1
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Create binaries
-        run: make build-plugins
-
-      - name: Save artifacts
-        uses: actions/upload-artifact@v1
-        with:
-          name: plugins
-          path: /home/runner/go/bin/
-
   build-operator:
     name: Build-operator
     runs-on: ubuntu-20.04
@@ -221,183 +200,169 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Load container artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: primer-operator
-          path: /tmp
+      - name: Checkout source
+        uses: actions/checkout@v2
 
-      - name: Import container image
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          buildkitd-flags: --debug
+
+      - name: Login to the registry
         run: |
-          docker load -i /tmp/operator.tar
-          docker inspect ${OPERATOR_IMAGE}
-      - name: Login to registry
-        # If the registry server is specified in the image name, we use that.
-        # If the server isn't in the image name, default to docker.io
-        run: |
-          [[ "${OPERATOR_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          [[ "${OPERATOR_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="quay.io"
           echo "Attempting docker login to: ${REGISTRY}"
           echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
-      - name: Push to registry (latest)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
-          github.ref == 'refs/heads/main'
-        run: |
-          docker push "${OPERATOR_IMAGE}"
-      - name: Push to registry (version tag)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
-          github.ref == 'refs/heads/main'
-        run: |
-          docker tag "${OPERATOR_IMAGE}" "${OPERATOR_IMAGE}:${{ env.TAG }}"
-          docker push "${OPERATOR_IMAGE}:${{ env.TAG }}"
+   
+      - name: "Build Operator Image"
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: "./Dockerfile"
+          platforms: "linux/amd64,linux/arm64"
+          push: true
+          tags: ${{ env.OPERATOR_IMAGE }}
+
 
   push-export:
     name: Push export container to registry
-    needs: [build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
+    needs: [build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Load container artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: export-image
-          path: /tmp
+      - name: Checkout source
+        uses: actions/checkout@v2
 
-      - name: Import container image
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          buildkitd-flags: --debug
+
+      - name: Login to the registry
         run: |
-          docker load -i /tmp/export.tar
-          docker inspect ${EXPORT_IMAGE}
-      - name: Login to registry
-        # If the registry server is specified in the image name, we use that.
-        # If the server isn't in the image name, default to docker.io
-        run: |
-          [[ "${EXPORT_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          [[ "${EXPORT_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="quay.io"
           echo "Attempting docker login to: ${REGISTRY}"
           echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
-      - name: Push to registry (latest)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
-          github.ref == 'refs/heads/main'
-        run: |
-          docker push "${EXPORT_IMAGE}"
-      - name: Push to registry (version tag)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
-          github.ref == 'refs/heads/main'
-        run: |
-          docker tag "${EXPORT_IMAGE}" "${EXPORT_IMAGE}:${{ env.TAG }}"
-          docker push "${EXPORT_IMAGE}:${{ env.TAG }}"
+   
+      - name: "Build Operator Image"
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: "./export/Dockerfile"
+          platforms: "linux/amd64,linux/arm64"
+          push: true
+          tags: ${{ env.EXPORT_IMAGE }}
 
   push-bundle:
     name: Push bundle container to registry
-    needs: [build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
+    needs: [build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Load container artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: primer-bundle
-          path: /tmp
+      - name: Checkout source
+        uses: actions/checkout@v2
 
-      - name: Import container image
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          buildkitd-flags: --debug
+
+      - name: Login to the registry
         run: |
-          docker load -i /tmp/bundle.tar
-          docker inspect "${BUNDLE_IMAGE}:${{ env.TAG }}"
-          
-      - name: Login to registry
-        # If the registry server is specified in the image name, we use that.
-        # If the server isn't in the image name, default to docker.io
-        run: |
-          [[ "${BUNDLE_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          [[ "${BUNDLE_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="quay.io"
           echo "Attempting docker login to: ${REGISTRY}"
           echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
-          
-      - name: Push to registry (version tag)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
-          github.ref == 'refs/heads/main'
-        run: |
-          echo "Pushing to ${{ env.TAG }}"
-          docker push "${BUNDLE_IMAGE}:${{ env.TAG }}"
+   
+      - name: "Build Operator Image"
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: "./bundle.Dockerfile"
+          platforms: "linux/amd64,linux/arm64"
+          push: true
+          tags: ${{ env.BUNDLE_IMAGE }}
 
   push-downloader:
     name: Push downloader image to registry
-    needs: [build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
+    needs: [build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Load container artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: primer-downloader
-          path: /tmp
+      - name: Checkout source
+        uses: actions/checkout@v2
 
-      - name: Import container image
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+        with:
+          buildkitd-flags: --debug
+
+      - name: Login to the registry
         run: |
-          docker load -i /tmp/downloader.tar
-          docker inspect ${DOWNLOADER_IMAGE}
-          
-          [[ "${DOWNLOADER_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          [[ "${DOWNLOADER_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="quay.io"
           echo "Attempting docker login to: ${REGISTRY}"
           echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
-      - name: Push to registry (latest)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
-          github.ref == 'refs/heads/main'
-        run: |
-          docker push "${DOWNLOADER_IMAGE}"
-      - name: Push to registry (version tag)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
-          github.ref == 'refs/heads/main'
-        run: |
-          docker tag "${DOWNLOADER_IMAGE}" "${DOWNLOADER_IMAGE}:${{ env.TAG }}"
-          docker push "${DOWNLOADER_IMAGE}:${{ env.TAG }}"
+   
+      - name: "Build Operator Image"
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: "./downloader/Dockerfile"
+          platforms: "linux/amd64,linux/arm64"
+          push: true
+          tags: ${{ env.DOWNLOADER_IMAGE }}
 
   push-webhook:
     name: Push webhook image to registry
-    needs: [build-plugins, build-webhook, build-operator, build-bundle, build-downloader, build-export]
+    needs: [build-webhook, build-operator, build-bundle, build-downloader, build-export]
     if: >
       (github.event_name == 'push' || github.event_name == 'schedule') &&
       (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Load container artifact
-        uses: actions/download-artifact@v1
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
         with:
-          name: primer-webhook
-          path: /tmp
+          buildkitd-flags: --debug
 
-      - name: Import container image
+      - name: Login to the registry
         run: |
-          docker load -i /tmp/webhook.tar
-          docker inspect ${WEBHOOK_IMAGE}
-
-          [[ "${WEBHOOK_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="docker.io"
+          [[ "${WEBHOOK_IMAGE}" =~ ^([^/]+)/[^/]+/[^/]+ ]] && REGISTRY="${BASH_REMATCH[1]}" || REGISTRY="quay.io"
           echo "Attempting docker login to: ${REGISTRY}"
           echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" --password-stdin ${REGISTRY}
-      - name: Push to registry (latest)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
-          github.ref == 'refs/heads/main'
-        run: |
-          docker push "${WEBHOOK_IMAGE}"
-      - name: Push to registry (version tag)
-        if: >
-          (github.event_name == 'push' || github.event_name == 'schedule') &&
-          github.ref == 'refs/heads/main'
-        run: |
-          docker tag "${WEBHOOK_IMAGE}" "${WEBHOOK_IMAGE}:${{ env.TAG }}"
-          docker push "${WEBHOOK_IMAGE}:${{ env.TAG }}"
+   
+      - name: "Build Operator Image"
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: "./webhook/Dockerfile"
+          platforms: "linux/amd64,linux/arm64"
+          push: true
+          tags: ${{ env.WEBHOOK_IMAGE }}
