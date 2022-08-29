@@ -21,7 +21,7 @@ make deploy
 If you would like to run GitOps primer within your environment that has OLM
 ```
 oc create ns gitops-primer-system
-operator-sdk run bundle quay.io/konveyor/gitops-primer-bundle:v0.0.1 --namespace gitops-primer-system
+operator-sdk run bundle quay.io/migtools/gitops-primer-bundle:v0.0.1 --namespace gitops-primer-system
 ```
 
 ## Running
