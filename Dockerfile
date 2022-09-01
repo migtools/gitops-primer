@@ -1,8 +1,8 @@
 # Build the manager binary
 FROM registry.access.redhat.com/ubi8/go-toolset:1.15.14 as builder
 
-RUN mkdir -p $APP_ROOT/src/github.com/konveyor/gitops-primer
-WORKDIR $APP_ROOT/src/github.com/konveyor/gitops-primer
+RUN mkdir -p $APP_ROOT/src/github.com/migtools/gitops-primer
+WORKDIR $APP_ROOT/src/github.com/migtools/gitops-primer
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
@@ -22,6 +22,6 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager 
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 WORKDIR /
-COPY --from=builder /opt/app-root/src/github.com/konveyor/gitops-primer/manager /manager
+COPY --from=builder /opt/app-root/src/github.com/migtools/gitops-primer/manager /manager
 USER 65532:65532
 ENTRYPOINT ["/manager"]
