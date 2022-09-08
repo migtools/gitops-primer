@@ -23,6 +23,7 @@ import (
 	"os"
 	"strconv"
 
+	valid "github.com/asaskevich/govalidator"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -160,7 +161,7 @@ func main() {
 	}
 }
 
-// setting privileged pod security labels to OADP operator namespace
+// setting privileged pod security labels to operator namespace
 func addPodSecurityPrivilegedLabels() error {
 	setupLog.Info("patching namespace with PSA labels")
 	kubeconf := ctrl.GetConfigOrDie()
@@ -175,8 +176,11 @@ func addPodSecurityPrivilegedLabels() error {
 		setupLog.Error(err, "problem getting server version")
 		return err
 	}
-
-	minor, err := strconv.Atoi(version.Minor)
+	minVer := version.Minor
+	if !valid.IsInt(minVer) {
+		minVer = minVer[:len(minVer) - 1]
+	}
+	minor, err := strconv.Atoi(minVer)
 	if err != nil {
 		setupLog.Error(err, "problem getting minor version")
 		return err
